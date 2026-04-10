@@ -1,72 +1,93 @@
 import React from 'react';
+import { ArrowLeft } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Input } from '../../components/ui/Input';
 import { useAuthStore } from '../../store/authStore';
 
 export function Login() {
-  const { login } = useAuthStore();
+  const login = useAuthStore((state) => state.login);
   const navigate = useNavigate();
 
-  const handleLogin = (e) => {
-    e.preventDefault();
+  const handleLogin = (event) => {
+    event.preventDefault();
+
     login({
       id: 'user_1',
       username: 'devatulya',
-      name: 'Alex Rivera',
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=devatulya'
+      name: 'Atulya',
+      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=devatulya',
+      major: 'Computer Science (BS)',
+      communities: ['Varsity Football', 'Graphic Design', 'Chess Society'],
+      notificationsEnabled: true,
     });
+
     navigate('/');
   };
 
   return (
-    <div className="flex flex-col md:flex-row min-h-screen bg-neoBg">
-      
-      <div className="bg-neoText text-white text-[9px] md:text-sm font-black tracking-widest uppercase md:w-20 md:h-screen flex items-center justify-center p-2 text-center md:writing-vertical-rl md:transform md:rotate-180 z-10 w-full py-4 leading-relaxed">
-        <span className="md:rotate-90 whitespace-nowrap">STUDENTS ONLY • NO TEACHERS ALLOWED</span>
-      </div>
-
-      <div className="flex-1 flex justify-center items-center p-4">
-        <div className="flex flex-col md:flex-row w-full max-w-5xl bg-white border-[3px] border-neoBorder shadow-neo overflow-hidden">
-          
-          <div className="p-8 md:p-16 flex-1 bg-neoYellow border-b-[3px] md:border-b-0 md:border-r-[3px] border-neoBorder flex flex-col justify-center">
-            <h1 className="text-5xl md:text-7xl font-black uppercase leading-none tracking-tighter">
-              WELCOME<br/>BACK
-            </h1>
-            <div className="w-16 h-2 md:h-4 bg-neoPurple border-[3px] border-neoBorder mt-4 md:mt-8 shadow-neo-sm"></div>
-            <p className="mt-6 font-bold text-sm md:text-lg uppercase max-w-xs">Enter your details to get back to the chaos.</p>
+    <div className="min-h-screen bg-neoBg px-4 py-6 md:px-8 md:py-10">
+      <div className="mx-auto flex min-h-[calc(100vh-3rem)] w-full max-w-6xl flex-col overflow-hidden border-[3px] border-neoBorder bg-neoSurface shadow-neo md:flex-row">
+        <div className="flex flex-1 flex-col justify-between border-b-[3px] border-neoBorder bg-neoYellow p-6 md:border-b-0 md:border-r-[3px] md:p-10">
+          <div className="flex items-center justify-between">
+            <Link
+              to="/landing"
+              className="flex h-10 w-10 items-center justify-center border-[3px] border-neoBorder bg-neoSurface shadow-neo-sm"
+            >
+              <ArrowLeft className="h-5 w-5 stroke-[3px]" />
+            </Link>
+            <span className="text-[10px] font-black uppercase tracking-[0.3em]">Backstage pass</span>
           </div>
 
-          <form onSubmit={handleLogin} className="p-8 md:p-16 space-y-6 flex-1 flex flex-col justify-center relative">
-            <div className="absolute top-4 right-4 w-8 h-8 bg-neoCyan border-[3px] border-neoBorder rotate-45"></div>
+          <div className="py-12 md:py-0">
+            <h1 className="text-5xl font-black uppercase leading-none tracking-tight md:text-7xl">
+              Welcome
+              <br />
+              back
+            </h1>
+            <div className="mt-6 h-4 w-20 border-[3px] border-neoBorder bg-neoPink shadow-neo-sm" />
+            <p className="mt-8 max-w-sm text-base font-bold uppercase leading-relaxed">
+              Enter your details, slide back into your scene, and catch up on campus chaos.
+            </p>
+          </div>
 
-            <div className="space-y-1">
-              <label className="text-[10px] md:text-xs font-black uppercase tracking-wider bg-white px-1">USERNAME</label>
-              <Input type="text" placeholder="TYPE HERE..." className="h-14 font-black text-sm uppercase" required />
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-[10px] md:text-xs font-black uppercase tracking-wider bg-white px-1">PASSWORD</label>
-              <Input type="password" placeholder="••••••••" className="h-14" required />
-            </div>
-
-            <button 
-              type="submit"
-              className="w-full bg-neoPurple text-white font-black uppercase text-lg py-4 border-[3px] border-neoBorder shadow-neo active:translate-x-1 active:translate-y-1 active:shadow-none transition-all mt-4 hover:bg-[#5815ff]"
-            >
-              LOG IN ➔
-            </button>
-
-            <div className="text-center md:text-left mt-6 flex flex-col md:flex-row md:justify-between items-center gap-4">
-              <span className="text-[10px] md:text-xs font-black underline uppercase cursor-pointer hover:text-neoPurple">
-                FORGOT PASSWORD?
-              </span>
-              <span className="text-xs font-black uppercase border-[3px] border-neoText px-4 py-2 shadow-neo-sm hover:-translate-y-0.5 transition-transform">
-                NEW HERE? <Link to="/signup" className="underline text-neoPurple">SIGN UP</Link>
-              </span>
-            </div>
-          </form>
-
+          <p className="text-sm font-semibold text-neoMuted">Students only. Bring your strongest opinions.</p>
         </div>
+
+        <form onSubmit={handleLogin} className="flex flex-1 flex-col justify-center p-6 md:p-10">
+          <div className="mb-8">
+            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-neoMuted">Log in</p>
+            <h2 className="mt-2 text-3xl font-black uppercase leading-none md:text-4xl">Get back to it</h2>
+          </div>
+
+          <div className="space-y-5">
+            <div className="space-y-2">
+              <label className="text-xs font-black uppercase tracking-[0.2em]">Username</label>
+              <Input type="text" placeholder="type here..." className="h-14 text-base font-black uppercase" required />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-black uppercase tracking-[0.2em]">Password</label>
+              <Input type="password" placeholder="........" className="h-14 text-base font-black" required />
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            className="mt-8 w-full border-[3px] border-neoBorder bg-neoPurple py-4 text-lg font-black uppercase text-white shadow-neo"
+          >
+            Log in
+          </button>
+
+          <div className="mt-8 flex flex-col gap-4 text-sm font-black uppercase md:flex-row md:items-center md:justify-between">
+            <span className="underline text-neoMuted">Forgot password?</span>
+            <span>
+              New here?{' '}
+              <Link to="/signup" className="underline">
+                Sign up
+              </Link>
+            </span>
+          </div>
+        </form>
       </div>
     </div>
   );

@@ -13,11 +13,11 @@ export function Button({
   
   const variants = {
     primary: 'bg-neoPurple text-white',
-    secondary: 'bg-white text-neoText',
+    secondary: 'bg-neoSurface text-neoText',
     yellow: 'bg-neoYellow text-neoText',
     cyan: 'bg-neoCyan text-neoText',
     pink: 'bg-neoPink text-white',
-    ghost: 'border-transparent shadow-none bg-transparent hover:bg-slate-100 text-neoText active:shadow-none active:translate-x-0 active:translate-y-0 active:scale-95',
+    ghost: 'border-transparent shadow-none bg-transparent hover:bg-neoSurfaceMuted text-neoText active:shadow-none active:translate-x-0 active:translate-y-0 active:scale-95',
     danger: 'bg-red-500 text-white'
   };
 

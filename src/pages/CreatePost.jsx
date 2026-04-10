@@ -1,65 +1,166 @@
-import React, { useState } from 'react';
-import { ArrowLeft, Image, Link2, BarChart2 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import React from 'react';
+import { ArrowLeft, BarChart2, ChevronDown, Image, Link2, Sparkles } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { DraftsModal } from '../components/modals/DraftsModal';
+import { ToggleSwitch } from '../components/ui/ToggleSwitch';
+import { useUiStore } from '../store/uiStore';
+
+const zones = ['Campus Pulse', 'Library Board', 'Weekend Warriors', 'Design Dungeon'];
 
 export function CreatePost() {
-  const [ghostMode, setGhostMode] = useState(false);
+  const navigate = useNavigate();
+  const [ghostMode, setGhostMode] = React.useState(false);
+  const [selectedZone, setSelectedZone] = React.useState(zones[0]);
+  const [menuOpen, setMenuOpen] = React.useState(false);
+  const [content, setContent] = React.useState('');
+  const [title, setTitle] = React.useState('');
+
+  const { openDrafts, closeDrafts, getDraftById } = useUiStore((state) => ({
+    openDrafts: state.openDrafts,
+    closeDrafts: state.closeDrafts,
+    getDraftById: state.getDraftById,
+  }));
+
+  const characterCount = content.length;
+
+  const handleRestoreDraft = (draftId) => {
+    const draft = getDraftById(draftId);
+
+    if (!draft) {
+      return;
+    }
+
+    setTitle(draft.title);
+    setContent(draft.content);
+    setSelectedZone(draft.zone);
+    setGhostMode(draft.ghostMode);
+    closeDrafts();
+  };
+
+  const handleSubmit = () => {
+    if (!content.trim()) {
+      return;
+    }
+
+    navigate('/');
+  };
 
   return (
-    <div className="flex flex-col min-h-screen bg-neoBg pb-20">
-      <div className="bg-white border-b-[3px] border-neoBorder px-4 py-4 flex items-center justify-between">
-        <Link to="/" className="w-8 h-8 flex items-center justify-center border-[3px] border-neoBorder bg-neoCyan shadow-neo-sm text-neoText">
-          <ArrowLeft className="w-5 h-5 stroke-[3px]" />
-        </Link>
-        <h1 className="text-lg font-black tracking-tighter uppercase">New Blast</h1>
-        <span className="text-xs font-bold text-neoPurple underline">Drafts</span>
-      </div>
+    <>
+      <div className="flex min-h-screen flex-col bg-neoBg pb-20">
+        <div className="surface-panel sticky top-0 z-30 border-b-[3px] border-neoBorder px-4 py-4">
+          <div className="flex items-center justify-between gap-4">
+            <Link
+              to="/"
+              className="flex h-10 w-10 items-center justify-center border-[3px] border-neoBorder bg-neoCyan shadow-neo-sm"
+            >
+              <ArrowLeft className="h-5 w-5 stroke-[3px]" />
+            </Link>
 
-      <div className="p-4 flex-1 flex flex-col gap-4">
-        {/* Select Zone */}
-        <button className="w-full bg-neoYellow border-[3px] border-neoBorder text-neoText font-bold text-left px-4 py-3 shadow-neo flex items-center justify-between">
-          <span>SELECT ZONE</span>
-          <span className="text-xl">▾</span>
-        </button>
-
-        {/* Text Area */}
-        <div className="bg-white border-[3px] border-neoBorder shadow-neo flex flex-col h-64">
-          <textarea 
-            className="w-full flex-1 p-4 resize-none outline-none font-bold text-sm bg-transparent placeholder-slate-300"
-            placeholder="SPILL THE TEA... WHAT'S HAPPENING ON CAMPUS?"
-          />
-          <div className="border-t-[3px] border-neoBorder p-2 flex items-center justify-between">
-            <div className="flex items-center gap-3 px-2">
-              <Image className="w-5 h-5 stroke-[2px] text-slate-600" />
-              <Link2 className="w-5 h-5 stroke-[2px] text-slate-600" />
-              <BarChart2 className="w-5 h-5 stroke-[2px] text-slate-600" />
+            <div className="text-center">
+              <p className="text-[10px] font-black uppercase tracking-[0.3em] text-neoMuted">Create</p>
+              <h1 className="text-lg font-black uppercase tracking-tight">New Blast</h1>
             </div>
-            <span className="text-[10px] font-bold text-slate-400">0/280</span>
+
+            <button
+              type="button"
+              onClick={openDrafts}
+              className="border-[3px] border-neoBorder bg-neoYellow px-3 py-2 text-[10px] font-black uppercase shadow-neo-sm"
+            >
+              Drafts
+            </button>
           </div>
         </div>
 
-        {/* Ghost Mode */}
-        <div className="bg-white border-[3px] border-neoBorder shadow-neo p-3 flex items-center justify-between mt-auto">
-          <div className="flex items-center gap-3">
-            <span className="text-2xl">👻</span>
-            <div>
-              <h3 className="font-bold text-xs">GHOST MODE</h3>
-              <p className="text-[10px] font-medium text-slate-500 uppercase leading-tight">Post anonymously to this board</p>
+        <div className="flex flex-1 flex-col gap-4 p-4 md:px-6 md:py-5">
+          <div className="space-y-2">
+            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-neoMuted">Headline</label>
+            <input
+              type="text"
+              value={title}
+              onChange={(event) => setTitle(event.target.value)}
+              placeholder="Name your blast..."
+              className="h-14 w-full border-[3px] border-neoBorder bg-neoSurface px-4 text-sm font-bold text-neoText shadow-neo outline-none placeholder:text-neoMuted"
+            />
+          </div>
+
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setMenuOpen((current) => !current)}
+              className="flex w-full items-center justify-between border-[3px] border-neoBorder bg-neoYellow px-4 py-4 text-left text-sm font-black uppercase shadow-neo"
+            >
+              <span className="flex flex-col gap-1">
+                <span className="text-[10px] tracking-[0.2em] text-neoMuted">Select zone</span>
+                <span>{selectedZone}</span>
+              </span>
+              <ChevronDown className={`h-5 w-5 stroke-[3px] transition-transform ${menuOpen ? 'rotate-180' : ''}`} />
+            </button>
+
+            {menuOpen ? (
+              <div className="surface-panel absolute left-0 right-0 top-[calc(100%+8px)] z-20 border-[3px] border-neoBorder shadow-neo">
+                {zones.map((zone) => (
+                  <button
+                    key={zone}
+                    type="button"
+                    onClick={() => {
+                      setSelectedZone(zone);
+                      setMenuOpen(false);
+                    }}
+                    className={`flex w-full items-center justify-between border-b-[3px] border-neoBorder px-4 py-3 text-left text-sm font-bold uppercase last:border-b-0 ${
+                      zone === selectedZone ? 'bg-neoCyan text-neoText' : 'hover:bg-neoSurfaceMuted'
+                    }`}
+                  >
+                    {zone}
+                    {zone === selectedZone ? <Sparkles className="h-4 w-4 stroke-[3px]" /> : null}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+          </div>
+
+          <div className="surface-panel flex flex-1 flex-col border-[3px] border-neoBorder shadow-neo">
+            <textarea
+              value={content}
+              onChange={(event) => setContent(event.target.value.slice(0, 280))}
+              className="min-h-[280px] flex-1 resize-none bg-transparent p-4 text-sm font-bold leading-relaxed text-neoText outline-none placeholder:text-neoMuted"
+              placeholder="Spill the tea... what's happening on campus?"
+            />
+
+            <div className="flex items-center justify-between border-t-[3px] border-neoBorder px-4 py-3">
+              <div className="flex items-center gap-3 text-neoMuted">
+                <Image className="h-5 w-5 stroke-[2.5px]" />
+                <Link2 className="h-5 w-5 stroke-[2.5px]" />
+                <BarChart2 className="h-5 w-5 stroke-[2.5px]" />
+              </div>
+
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-neoMuted">{characterCount}/280</span>
             </div>
           </div>
-          <button 
-            onClick={() => setGhostMode(!ghostMode)}
-            className={`w-12 h-6 border-[3px] border-neoBorder flex items-center transition-colors ${ghostMode ? 'bg-neoCyan' : 'bg-slate-200'}`}
+
+          <div className="surface-panel mt-auto flex items-center justify-between gap-4 border-[3px] border-neoBorder p-4 shadow-neo">
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.2em]">Ghost mode</p>
+              <p className="mt-1 text-xs font-semibold leading-relaxed text-neoMuted">
+                Post anonymously to this zone while keeping the same retro vibe.
+              </p>
+            </div>
+
+            <ToggleSwitch checked={ghostMode} onChange={setGhostMode} aria-label="Toggle ghost mode" />
+          </div>
+
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={!content.trim()}
+            className="w-full border-[3px] border-neoBorder bg-neoPink py-4 text-xl font-black uppercase text-white shadow-neo disabled:cursor-not-allowed disabled:opacity-50"
           >
-            <div className={`w-4 h-4 bg-white border-[3px] border-neoBorder transition-transform ${ghostMode ? 'translate-x-6' : ''}`} />
+            Blast it
           </button>
         </div>
-
-        {/* Submit */}
-        <button className="w-full bg-neoPink text-white font-black uppercase text-xl py-4 border-[3px] border-neoBorder shadow-neo active:translate-x-1 active:translate-y-1 active:shadow-none transition-all">
-          BLAST IT 🚀
-        </button>
       </div>
-    </div>
+
+      <DraftsModal onRestore={handleRestoreDraft} />
+    </>
   );
 }

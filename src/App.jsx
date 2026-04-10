@@ -1,52 +1,72 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { useAuthStore } from './store/authStore';
-
-// Layout
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AppLayout } from './components/layout/AppLayout';
-
-// Feed & Core
-import { Feed } from './pages/Feed';
-import { Explore } from './pages/Explore';
+import { NotificationsModal } from './components/modals/NotificationsModal';
 import { CreatePost } from './pages/CreatePost';
+import { Explore } from './pages/Explore';
+import { Feed } from './pages/Feed';
 import { Profile } from './pages/Profile';
 import { Settings } from './pages/Settings';
-
-// Auth Pages (Placeholder exports for now, creating next)
 import { Landing } from './pages/auth/Landing';
 import { Login } from './pages/auth/Login';
 import { Signup } from './pages/auth/Signup';
+import { useAuthStore } from './store/authStore';
+import { useUiStore } from './store/uiStore';
+
+function ProtectedRoute({ children }) {
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+
+  if (!isAuthenticated) {
+    return <Navigate to="/landing" replace />;
+  }
+
+  return children;
+}
 
 export default function App() {
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, user } = useAuthStore((state) => ({
+    isAuthenticated: state.isAuthenticated,
+    user: state.user,
+  }));
+  const initializeTheme = useUiStore((state) => state.initializeTheme);
+
+  React.useEffect(() => {
+    initializeTheme();
+  }, [initializeTheme]);
 
   return (
     <BrowserRouter>
-      <Routes>
-        {/* Unauthenticated Routes */}
-        {!isAuthenticated && (
-          <>
-            <Route path="/landing" element={<Landing />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<Signup />} />
-            <Route path="*" element={<Navigate to="/landing" replace />} />
-          </>
-        )}
+      <NotificationsModal />
 
-        {/* Authenticated Routes */}
-        {isAuthenticated && (
-          <>
-            <Route element={<AppLayout />}>
-              <Route path="/" element={<Feed />} />
-              <Route path="/explore" element={<Explore />} />
-              <Route path="/create" element={<CreatePost />} />
-              <Route path="/profile/:id" element={<Profile />} />
-            </Route>
-            {/* Settings is usually outside the bottom nav layout, or full screen */}
-            <Route path="/settings" element={<Settings />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </>
-        )}
+      <Routes>
+        <Route path="/landing" element={<Landing />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
+
+        <Route
+          element={
+            <ProtectedRoute>
+              <AppLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route path="/" element={<Feed />} />
+          <Route path="/explore" element={<Explore />} />
+          <Route path="/create" element={<CreatePost />} />
+          <Route path="/profile" element={<Navigate to={`/profile/${user?.id ?? 'me'}`} replace />} />
+          <Route path="/profile/:id" element={<Profile />} />
+        </Route>
+
+        <Route
+          path="/settings"
+          element={
+            <ProtectedRoute>
+              <Settings />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route path="*" element={<Navigate to={isAuthenticated ? '/' : '/landing'} replace />} />
       </Routes>
     </BrowserRouter>
   );

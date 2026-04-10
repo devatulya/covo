@@ -1,75 +1,74 @@
 import React from 'react';
+import { BadgeCheck, GraduationCap } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export function Landing() {
   return (
-    <div className="flex flex-col min-h-screen bg-neoBg md:flex-row relative overflow-hidden">
-      
-      {/* Mobile Top Bar / Desktop Side Bar */}
-      <div className="bg-neoText text-white text-[9px] md:text-xs font-black tracking-widest uppercase md:w-16 md:h-screen flex items-center justify-center p-2 text-center md:writing-vertical-rl md:transform md:rotate-180 z-10 w-full py-2">
-        <span className="md:rotate-90 whitespace-nowrap">STUDENTS ONLY • NO TEACHERS ALLOWED</span>
+    <div className="min-h-screen bg-neoBg">
+      <div className="bg-neoText px-4 py-3 text-center text-xs font-black uppercase tracking-[0.35em] text-neoBg">
+        Students only | No teachers allowed
       </div>
 
-      <div className="flex-1 flex flex-col md:flex-row w-full max-w-7xl mx-auto h-full min-h-screen overflow-hidden">
-        
-        {/* Left Art Area */}
-        <div className="flex-1 flex flex-col items-center justify-center p-6 z-10 relative">
-          {/* Decorative blocks */}
-          <div className="absolute top-[20%] left-[10%] w-16 h-16 bg-neoCyan border-[3px] border-neoBorder -rotate-12 shadow-neo z-0 hidden md:block"></div>
-          <div className="absolute bottom-[20%] right-[10%] w-12 h-12 bg-neoPink border-[3px] border-neoBorder rotate-12 shadow-neo z-0 hidden md:block"></div>
-          
-          {/* Title */}
-          <div className="flex flex-col items-center md:items-start rotate-[-2deg] mb-8 md:rotate-0 z-10">
-            <div className="border-[3px] border-neoBorder bg-white p-2 shadow-neo mb-4 hidden md:block w-min">
-              <span className="text-4xl font-black">⚡</span>
-            </div>
-            <h1 className="text-4xl md:text-7xl font-black uppercase text-center md:text-left leading-none md:tracking-tighter">
-              JOIN THE
-            </h1>
-            <div className="inline-block">
-               <h1 className="text-4xl md:text-7xl font-black uppercase text-center bg-neoYellow border-[3px] border-neoBorder px-4 py-1 md:py-2 md:px-6 shadow-neo mt-1 rotate-2 md:rotate-[-2deg] inline-block">
-                 CHAOS
-               </h1>
-            </div>
+      <div className="relative mx-auto flex min-h-[calc(100vh-52px)] w-full max-w-6xl flex-col overflow-hidden px-4 py-6 md:px-8 md:py-10">
+        <div className="pointer-events-none absolute left-[-30px] top-[28%] h-28 w-28 rotate-[-12deg] border-[3px] border-neoBorder bg-neoCyan shadow-neo md:h-36 md:w-36" />
+        <div className="pointer-events-none absolute right-[-16px] top-[10%] h-20 w-20 rotate-[12deg] border-[3px] border-neoBorder bg-neoCyan shadow-neo md:h-24 md:w-24" />
+        <div className="pointer-events-none absolute right-[10%] top-[18%] h-24 w-24 rotate-[2deg] border-[3px] border-neoBorder bg-neoSurface shadow-neo md:h-28 md:w-28" />
+
+        <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center text-center md:max-w-2xl">
+          <div className="mx-auto mb-6 flex h-24 w-24 rotate-[-3deg] items-center justify-center border-[3px] border-neoBorder bg-neoSurface shadow-neo">
+            <span className="text-5xl font-black">Z</span>
           </div>
 
-          <div className="bg-white border-[3px] border-neoBorder px-4 py-3 shadow-neo text-center md:text-left rotate-1 md:rotate-2 mb-8 md:mb-0 w-full max-w-[300px] md:max-w-md z-10">
-            <p className="text-sm md:text-xl font-bold leading-tight uppercase">
-              The rawest social network for campus life!
+          <h1 className="text-5xl font-black uppercase leading-none tracking-tight sm:text-6xl md:text-7xl">
+            Join the
+          </h1>
+          <div className="mt-2 inline-flex self-center rotate-[-1deg] border-[3px] border-neoBorder bg-neoYellow px-4 py-1 shadow-neo md:px-6 md:py-2">
+            <span className="text-5xl font-black uppercase leading-none tracking-tight sm:text-6xl md:text-7xl">Chaos</span>
+          </div>
+
+          <div className="mx-auto mt-8 max-w-xl rotate-[1deg] border-[3px] border-neoBorder bg-neoSurface px-5 py-4 shadow-neo md:px-8 md:py-5">
+            <p className="text-2xl font-semibold leading-tight">The rawest social network for campus life!</p>
+          </div>
+
+          <div className="mt-12 flex flex-col gap-5">
+            <Link
+              to="/signup?method=email"
+              className="flex w-full items-center justify-center gap-4 border-[3px] border-neoBorder bg-neoYellow px-5 py-5 text-left shadow-neo"
+            >
+              <GraduationCap className="h-6 w-6 shrink-0 stroke-[3px]" />
+              <span className="flex flex-col">
+                <span className="text-xl font-black uppercase leading-none">Use college email</span>
+                <span className="mt-2 text-sm font-black uppercase">(all colleges)</span>
+              </span>
+            </Link>
+
+            <Link
+              to="/signup?method=id"
+              className="flex w-full items-center justify-center gap-4 border-[3px] border-neoBorder bg-neoCyan px-5 py-5 text-left shadow-neo"
+            >
+              <BadgeCheck className="h-6 w-6 shrink-0 stroke-[3px]" />
+              <span className="flex flex-col">
+                <span className="text-xl font-black uppercase leading-none">Use college ID-card</span>
+                <span className="mt-2 text-sm font-black uppercase">(verified campus flow)</span>
+              </span>
+            </Link>
+          </div>
+
+          <div className="mt-10">
+            <p className="text-base font-black uppercase tracking-wide">
+              Already have an account?{' '}
+              <Link to="/login" className="underline">
+                Log in
+              </Link>
+            </p>
+          </div>
+
+          <div className="mt-10 border-t-[3px] border-dashed border-neoBorder pt-6">
+            <p className="text-sm font-semibold text-neoMuted">
+              By jumping into the chaos, you agree to our Terms &amp; Privacy Policy.
             </p>
           </div>
         </div>
-
-        {/* Right Form Area */}
-        <div className="flex-1 flex flex-col justify-center items-center p-6 relative z-10 md:bg-white md:border-l-[3px] md:border-neoBorder">
-          
-          <div className="absolute top-[10%] left-[-20px] w-12 h-12 bg-neoCyan border-[3px] border-neoBorder rotate-[-15deg] shadow-neo z-0 md:hidden"></div>
-
-          <div className="w-full space-y-4 max-w-[350px] relative z-10">
-            
-            <Link to="/signup" className="w-full relative block">
-              <button className="w-full bg-neoYellow border-[3px] border-neoBorder py-4 md:py-6 shadow-neo active:translate-x-1 active:translate-y-1 active:shadow-none transition-all flex flex-col items-center justify-center group hover:bg-[#ffe000]">
-                <span className="font-black text-sm md:text-lg uppercase">🎓 USE COLLEGE EMAIL</span>
-                <span className="text-[9px] md:text-xs font-bold">(ALL COLLEGES)</span>
-              </button>
-            </Link>
-
-            <button className="w-full bg-neoCyan border-[3px] border-neoBorder py-4 md:py-6 shadow-neo active:translate-x-1 active:translate-y-1 active:shadow-none transition-all flex flex-col items-center justify-center hover:bg-[#00e5cc]">
-              <span className="font-black text-sm md:text-lg uppercase">🪪 USE COLLEGE ID-CARD</span>
-              <span className="text-[9px] md:text-xs font-bold">(NIT ONLY)</span>
-            </button>
-
-            <div className="mt-8 text-center pt-8 border-t-[3px] border-dashed border-slate-300 w-full">
-              <Link to="/login" className="inline-block bg-neoText text-white px-6 py-3 font-black text-xs md:text-sm uppercase shadow-neo hover:-translate-y-1 transition-transform">
-                ALREADY HAVE AN ACCOUNT? LOG IN
-              </Link>
-              <p className="text-[9px] text-slate-500 font-bold mt-6 px-4 md:hidden">
-                By jumping into the chaos, you agree to our <br/>Terms & Privacy Policy.
-              </p>
-            </div>
-          </div>
-        </div>
-
       </div>
     </div>
   );

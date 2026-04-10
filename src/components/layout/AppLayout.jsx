@@ -5,25 +5,26 @@ import { SideNav } from '../navigation/SideNav';
 
 export function AppLayout() {
   return (
-    <div className="min-h-screen bg-neoBg flex justify-center w-full">
-      <div className="flex w-full max-w-7xl relative justify-center md:justify-start">
-        {/* Desktop Sidebar */}
+    <div className="min-h-screen w-full bg-neoBg">
+      <div className="relative mx-auto flex w-full max-w-7xl justify-center md:justify-start">
         <SideNav />
 
-        {/* Main Feed Content */}
-        <main className="w-full md:max-w-2xl bg-neoBg pb-20 md:pb-0 md:border-r-[3px] border-neoBorder min-h-screen">
+        <main className="min-h-screen w-full bg-neoBg pb-20 md:max-w-3xl md:border-r-[3px] md:border-neoBorder md:pb-0">
           <Outlet />
         </main>
 
-        {/* Desktop Right Sidebar Spacer/Ads (optional future extension) */}
-        <aside className="hidden lg:block flex-1 p-6">
-           <div className="border-[3px] border-neoBorder bg-neoCyan p-4 shadow-neo">
-               <h3 className="font-black text-sm uppercase mb-2">Campus Bulletin</h3>
-               <p className="text-xs font-bold leading-relaxed mb-4">Welcome to the rawest social network on campus. Go post a blast.</p>
-           </div>
+        <aside className="hidden flex-1 p-6 lg:block">
+          <div className="surface-panel border-[3px] border-neoBorder p-5 shadow-neo">
+            <h3 className="mb-3 text-sm font-black uppercase tracking-[0.2em]">Campus Bulletin</h3>
+            <p className="mb-5 text-sm font-bold leading-relaxed text-neoMuted">
+              The loudest boards, weirdest confessions, and the clubs worth showing up for live here.
+            </p>
+            <div className="border-[3px] border-neoBorder bg-neoYellow px-4 py-3 text-xs font-black uppercase shadow-neo-sm">
+              New blasts keep dropping. Scroll with caution.
+            </div>
+          </div>
         </aside>
 
-        {/* Mobile Nav */}
         <BottomNav />
       </div>
     </div>

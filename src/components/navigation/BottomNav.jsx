@@ -1,11 +1,11 @@
 import React from 'react';
+import { Home, PlusSquare, Search, User } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
-import { Home, Search, User, PlusSquare } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 
 export function BottomNav() {
-  const { user } = useAuthStore();
-  
+  const user = useAuthStore((state) => state.user);
+
   const navItems = [
     { to: '/', icon: Home, label: 'Home' },
     { to: '/explore', icon: Search, label: 'Explore' },
@@ -14,19 +14,22 @@ export function BottomNav() {
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 w-full bg-white border-t-[3px] border-neoBorder z-50 md:hidden">
-      <div className="flex items-center justify-around h-16 pb-safe">
+    <nav className="surface-panel fixed bottom-0 left-0 z-50 w-full border-t-[3px] border-neoBorder md:hidden">
+      <div className="flex h-16 items-center justify-around">
         {navItems.map((item) => {
           const Icon = item.icon;
+
           return (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              className="flex items-center justify-center w-full h-full relative"
-            >
+            <NavLink key={item.to} to={item.to} className="flex h-full w-full items-center justify-center">
               {({ isActive }) => (
-                <div className={`p-2 transition-colors ${isActive ? 'bg-neoCyan border-[2.5px] border-neoBorder shadow-neo-sm' : 'text-slate-400 hover:text-neoText hover:bg-slate-50'}`}>
-                  <Icon className={`w-6 h-6 ${isActive ? 'stroke-[2.5px] text-neoText' : 'stroke-2'}`} />
+                <div
+                  className={`flex h-12 w-12 items-center justify-center border-[3px] transition-all ${
+                    isActive
+                      ? 'border-neoBorder bg-neoCyan shadow-neo-sm'
+                      : 'border-transparent bg-transparent text-neoMuted'
+                  }`}
+                >
+                  <Icon className={`h-6 w-6 ${isActive ? 'stroke-[2.75px] text-neoText' : 'stroke-[2.25px]'}`} />
                 </div>
               )}
             </NavLink>
