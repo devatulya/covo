@@ -1,0 +1,134 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ─── USERS ───────────────────────────────────────────────
+    match /users/{userId} {
+      // Any authenticated user can read profiles
+      allow read: if request.auth != null;
+
+      // Only the user themselves can create their profile (UID must match doc ID)
+      allow create: if request.auth.uid == userId
+                    && request.resource.data.keys().hasAll(['userId', 'username', 'email', 'college', 'createdAt'])
+                    && request.resource.data.userId == request.auth.uid;
+
+      // Only the user can update their own profile
+      // Cannot change userId or email after creation
+      allow update: if request.auth.uid == userId
+                    && !request.resource.data.diff(resource.data).affectedKeys()
+                        .hasAny(['userId', 'email']);
+
+      // No client-side deletion of user profiles
+      allow delete: if false;
+
+      // ─── FCM TOKENS (subcollection) ──────────────────────
+      match /fcmTokens/{tokenId} {
+        allow read, write: if request.auth.uid == userId;
+      }
+    }
+
+    // ─── POSTS ───────────────────────────────────────────────
+    match /posts/{postId} {
+      // Authenticated users can read posts
+      // Feed queries should filter by status == 'approved'
+      // Admins and post owners can also see pending/rejected posts
+      allow read: if request.auth != null;
+
+      // Create post:
+      // - Must be authenticated
+      // - userId must match auth UID
+      // - likesCount and commentsCount must start at 0
+      // - isFlagged must be false
+      // - category must be valid
+      // - Anonymous posts must have status 'pending_review'
+      // - Non-anonymous posts must have status 'approved'
+      allow create: if request.auth != null
+                    && request.resource.data.userId == request.auth.uid
+                    && request.resource.data.likesCount == 0
+                    && request.resource.data.commentsCount == 0
+                    && request.resource.data.isFlagged == false
+                    && request.resource.data.category in ['meme', 'rant', 'event', 'discussion']
+                    && (
+                      (request.resource.data.isAnonymous == true
+                        && request.resource.data.status == 'pending_review')
+                      ||
+                      (request.resource.data.isAnonymous == false
+                        && request.resource.data.status == 'approved')
+                    );
+
+      // Update post:
+      // - Only the post owner can update
+      // - Cannot tamper with system-managed fields
+      allow update: if request.auth.uid == resource.data.userId
+                    && !request.resource.data.diff(resource.data).affectedKeys()
+                        .hasAny(['likesCount', 'commentsCount', 'isFlagged', 'userId', 'status', 'isAnonymous']);
+
+      // Delete post: only the post owner or admin
+      allow delete: if request.auth.uid == resource.data.userId
+                    || request.auth.token.admin == true;
+
+      // ─── LIKES (subcollection) ────────────────────────────
+      match /likes/{likeUserId} {
+        allow read: if request.auth != null;
+
+        // Can only like as yourself (doc ID = your UID)
+        allow create: if request.auth.uid == likeUserId
+                      && request.resource.data.userId == request.auth.uid;
+
+        // Can only unlike your own like
+        allow delete: if request.auth.uid == likeUserId;
+
+        // No updates to likes
+        allow update: if false;
+      }
+    }
+
+    // ─── COMMENTS ────────────────────────────────────────────
+    match /comments/{commentId} {
+      allow read: if request.auth != null;
+
+      // Create comment: authenticated, userId must match
+      allow create: if request.auth != null
+                    && request.resource.data.userId == request.auth.uid
+                    && request.resource.data.keys().hasAll(['postId', 'userId', 'text', 'createdAt']);
+
+      // Comments are immutable
+      allow update: if false;
+
+      // Delete: only comment owner or admin
+      allow delete: if request.auth.uid == resource.data.userId
+                    || request.auth.token.admin == true;
+    }
+
+    // ─── REPORTS ─────────────────────────────────────────────
+    match /reports/{reportId} {
+      // Only admins can read reports (via Admin SDK in Cloud Functions)
+      allow read: if request.auth.token.admin == true;
+
+      // Any authenticated user can create a report
+      allow create: if request.auth != null
+                    && request.resource.data.reportedBy == request.auth.uid
+                    && request.resource.data.keys().hasAll(['postId', 'reportedBy', 'reason', 'createdAt']);
+
+      // No client-side update/delete of reports
+      allow update, delete: if false;
+    }
+
+    // ─── NOTIFICATIONS ───────────────────────────────────────
+    match /notifications/{notificationId} {
+      // Users can only read their own notifications
+      allow read: if request.auth.uid == resource.data.userId;
+
+      // Only Cloud Functions create notifications (Admin SDK bypasses rules)
+      allow create: if false;
+
+      // Users can only mark their own notifications as read
+      allow update: if request.auth.uid == resource.data.userId
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isRead']);
+
+      // Users can delete their own notifications
+      allow delete: if request.auth.uid == resource.data.userId;
+    }
+  }
+}
