@@ -5,9 +5,9 @@
 ## Architecture Overview
 
 ```
-Client App (Rigved)
+Client App
     │
-    ├── Firebase Auth (Saarthak) ──→ Google / Email login
+    ├── Firebase Auth ──→ Google / Email login
     │
     ├── Firestore (direct reads/writes with security rules)
     │   ├── users/
