@@ -1,0 +1,73 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --neo-yellow: #ffe600;
+    --neo-cyan: #35ddd0;
+    --neo-pink: #f304d8;
+    --neo-purple: #5b2cff;
+    --neo-orange: #ff7a00;
+    --neo-green: #00ff88;
+    --neo-bg: #efede7;
+    --neo-surface: #ffffff;
+    --neo-surface-muted: #ece8df;
+    --neo-text: #000000;
+    --neo-muted: #6b7280;
+    --neo-border: #000000;
+    --neo-overlay: rgba(0, 0, 0, 0.62);
+    --neo-shadow: rgba(0, 0, 0, 1);
+    color-scheme: light;
+  }
+
+  html.dark {
+    --neo-bg: #0f1011;
+    --neo-surface: #18191c;
+    --neo-surface-muted: #25272c;
+    --neo-text: #f7f4ee;
+    --neo-muted: #cbd5e1;
+    --neo-border: #f7f4ee;
+    --neo-overlay: rgba(0, 0, 0, 0.72);
+    --neo-shadow: rgba(0, 0, 0, 0.85);
+    color-scheme: dark;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-neoBg text-neoText font-sans transition-colors duration-200;
+  }
+
+  button,
+  a,
+  input,
+  textarea,
+  select {
+    @apply transition-colors duration-200;
+  }
+}
+
+@layer components {
+  .surface-panel {
+    @apply bg-neoSurface text-neoText;
+  }
+
+  .surface-muted {
+    @apply bg-neoSurfaceMuted;
+  }
+
+  .text-muted {
+    @apply text-neoMuted;
+  }
+}
+
+/* Hide scrollbar for a clean mobile UI */
+::-webkit-scrollbar {
+  width: 0px;
+  background: transparent;
+}
