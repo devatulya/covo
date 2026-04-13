@@ -24,15 +24,26 @@ function ProtectedRoute({ children }) {
 }
 
 export default function App() {
-  const { isAuthenticated, user } = useAuthStore((state) => ({
+  const { isAuthenticated, user, loading, initAuth } = useAuthStore((state) => ({
     isAuthenticated: state.isAuthenticated,
     user: state.user,
+    loading: state.loading,
+    initAuth: state.initAuth,
   }));
   const initializeTheme = useUiStore((state) => state.initializeTheme);
 
   React.useEffect(() => {
     initializeTheme();
-  }, [initializeTheme]);
+    initAuth();
+  }, [initializeTheme, initAuth]);
+
+  if (loading) {
+    return (
+      <div className="flex h-screen w-screen items-center justify-center bg-neoBg">
+        <div className="text-xl font-black uppercase text-neoText animate-pulse">Loading COVO...</div>
+      </div>
+    );
+  }
 
   return (
     <BrowserRouter>

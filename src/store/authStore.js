@@ -1,107 +1,118 @@
 import { create } from 'zustand';
+import { 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword, 
+  signOut,
+  onAuthStateChanged
+} from 'firebase/auth';
+import { doc, getDoc, setDoc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { auth, db } from '../firebase/config';
 
-const AUTH_STORAGE_KEY = 'covo-auth';
+export const useAuthStore = create((set, get) => ({
+  user: null,
+  isAuthenticated: false,
+  loading: true,
 
-const defaultUser = {
-  id: 'user_1',
-  username: 'devatulya',
-  avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=devatulya',
-  name: 'Atulya',
-  bio: 'Design major. Coffee addict. Making things break since 03.',
-  major: 'Computer Science (BS)',
-  communities: ['Varsity Football', 'Graphic Design', 'Chess Society'],
-  year: "'26",
-  notificationsEnabled: true,
-};
+  initAuth: () => {
+    onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        // Fetch user profile from Firestore
+        const userDocRef = doc(db, 'users', firebaseUser.uid);
+        const userDoc = await getDoc(userDocRef);
 
-function getInitialAuthState() {
-  if (typeof window === 'undefined') {
-    return { user: null, isAuthenticated: false };
-  }
+        if (userDoc.exists()) {
+          set({
+            user: { uid: firebaseUser.uid, id: firebaseUser.uid, ...userDoc.data() },
+            isAuthenticated: true,
+            loading: false,
+          });
+        } else {
+          // If firestore doc is missing, just fallback
+          set({
+            user: { uid: firebaseUser.uid, id: firebaseUser.uid, email: firebaseUser.email },
+            isAuthenticated: true,
+            loading: false,
+          });
+        }
+      } else {
+        set({ user: null, isAuthenticated: false, loading: false });
+      }
+    });
+  },
 
-  const storedAuth = window.localStorage.getItem(AUTH_STORAGE_KEY);
-  if (!storedAuth) {
-    return { user: null, isAuthenticated: false };
-  }
+  login: async ({ email, password }) => {
+    await signInWithEmailAndPassword(auth, email, password);
+  },
 
-  try {
-    const parsedAuth = JSON.parse(storedAuth);
-    if (parsedAuth?.user && parsedAuth?.isAuthenticated) {
-      return parsedAuth;
+  signup: async ({ email, password, username, name, college }) => {
+    // 1. Proactive check to see if email is already in our users collection
+    const usersRef = collection(db, 'users');
+    const q = query(usersRef, where('email', '==', email));
+    const querySnapshot = await getDocs(q);
+    
+    if (!querySnapshot.empty) {
+      throw new Error('User already exists. Please login instead.');
     }
-  } catch (error) {
-    window.localStorage.removeItem(AUTH_STORAGE_KEY);
-  }
 
-  return { user: null, isAuthenticated: false };
-}
+    let userCredential;
+    try {
+      userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    } catch (err) {
+      if (err.code === 'auth/email-already-in-use') {
+        throw new Error('User already exists. Please login instead.');
+      }
+      throw err;
+    }
+    
+    const userId = userCredential.user.uid;
 
-function persistAuth(nextState) {
-  if (typeof window === 'undefined') {
-    return;
-  }
-
-  window.localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(nextState));
-}
-
-function clearAuth() {
-  if (typeof window === 'undefined') {
-    return;
-  }
-
-  window.localStorage.removeItem(AUTH_STORAGE_KEY);
-}
-
-const initialAuthState = getInitialAuthState();
-
-export const useAuthStore = create((set) => ({
-  user: initialAuthState.user,
-  isAuthenticated: initialAuthState.isAuthenticated,
-
-  login: (userData) => {
-    const nextUser = {
-      ...defaultUser,
-      ...userData,
+    const newUserProfile = {
+      userId,
+      username,
+      name: name || username,
+      email,
+      college: college || 'University',
+      createdAt: new Date().toISOString(),
+      avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`,
+      notificationsEnabled: true,
     };
 
-    const nextState = { user: nextUser, isAuthenticated: true };
-    persistAuth(nextState);
-    set(nextState);
+    // Save profile to Firestore
+    await setDoc(doc(db, 'users', userId), newUserProfile);
+    
+    // update state will be handled automatically by onAuthStateChanged,
+    // but we can enforce local update here if we want
   },
 
-  logout: () => {
-    clearAuth();
-    set({ user: null, isAuthenticated: false });
+  logout: async () => {
+    await signOut(auth);
   },
 
-  updateProfile: (partialUser) =>
-    set((state) => {
-      const nextState = {
-        user: { ...state.user, ...partialUser },
-        isAuthenticated: state.isAuthenticated,
-      };
+  updateProfile: async (partialUser) => {
+    const currentUser = get().user;
+    if (!currentUser) return;
 
-      if (nextState.user && nextState.isAuthenticated) {
-        persistAuth(nextState);
+    const userDocRef = doc(db, 'users', currentUser.uid);
+    await updateDoc(userDocRef, partialUser);
+    
+    set((state) => ({
+      user: { ...state.user, ...partialUser }
+    }));
+  },
+
+  toggleNotifications: async () => {
+    const currentUser = get().user;
+    if (!currentUser) return;
+
+    const newStatus = !currentUser.notificationsEnabled;
+    const userDocRef = doc(db, 'users', currentUser.uid);
+    await updateDoc(userDocRef, { notificationsEnabled: newStatus });
+
+    set((state) => ({
+      user: {
+        ...state.user,
+        notificationsEnabled: newStatus,
       }
-
-      return nextState;
-    }),
-
-  toggleNotifications: () =>
-    set((state) => {
-      const nextState = {
-        user: {
-          ...state.user,
-          notificationsEnabled: !state.user?.notificationsEnabled,
-        },
-        isAuthenticated: state.isAuthenticated,
-      };
-
-      if (nextState.user && nextState.isAuthenticated) {
-        persistAuth(nextState);
-      }
-
-      return nextState;
-    }),
+    }));
+  },
 }));

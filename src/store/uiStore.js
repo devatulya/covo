@@ -58,7 +58,8 @@ function getInitialTheme() {
     return savedTheme;
   }
 
-  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  // Default strictly to light mode instead of matching system preferences
+  return 'light';
 }
 
 function applyTheme(theme) {

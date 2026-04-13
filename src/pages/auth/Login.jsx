@@ -8,20 +8,18 @@ export function Login() {
   const login = useAuthStore((state) => state.login);
   const navigate = useNavigate();
 
-  const handleLogin = (event) => {
+  const [email, setEmail] = React.useState('');
+  const [password, setPassword] = React.useState('');
+
+  const handleLogin = async (event) => {
     event.preventDefault();
 
-    login({
-      id: 'user_1',
-      username: 'devatulya',
-      name: 'Atulya',
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=devatulya',
-      major: 'Computer Science (BS)',
-      communities: ['Varsity Football', 'Graphic Design', 'Chess Society'],
-      notificationsEnabled: true,
-    });
-
-    navigate('/');
+    try {
+      await login({ email, password });
+      navigate('/');
+    } catch (err) {
+      console.error('Error logging in:', err);
+    }
   };
 
   return (
@@ -61,13 +59,13 @@ export function Login() {
 
           <div className="space-y-5">
             <div className="space-y-2">
-              <label className="text-xs font-black uppercase tracking-[0.2em]">Username</label>
-              <Input type="text" placeholder="type here..." className="h-14 text-base font-black uppercase" required />
+              <label className="text-xs font-black uppercase tracking-[0.2em]">College Email</label>
+              <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@university.edu" className="h-14 text-base font-black uppercase" required />
             </div>
 
             <div className="space-y-2">
               <label className="text-xs font-black uppercase tracking-[0.2em]">Password</label>
-              <Input type="password" placeholder="........" className="h-14 text-base font-black" required />
+              <Input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="........" className="h-14 text-base font-black" required />
             </div>
           </div>
 

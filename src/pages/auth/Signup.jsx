@@ -28,7 +28,7 @@ function titleCase(value) {
 }
 
 export function Signup() {
-  const login = useAuthStore((state) => state.login);
+  const signup = useAuthStore((state) => state.signup);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const signupMethod = searchParams.get('method') === 'id' ? 'id' : 'email';
@@ -39,11 +39,13 @@ export function Signup() {
   const [selectedMajor, setSelectedMajor] = React.useState(majors[0]);
   const [selectedScenes, setSelectedScenes] = React.useState(['Varsity Football', 'Graphic Design', 'Chess Society']);
   const [formData, setFormData] = React.useState({
+    email: '',
     username: '',
     password: '',
     confirmPassword: '',
     bio: '',
   });
+  const [signupError, setSignupError] = React.useState('');
 
   const passwordMismatch =
     formData.password.length > 0 &&
@@ -51,6 +53,7 @@ export function Signup() {
     formData.password !== formData.confirmPassword;
 
   const canContinueProfile =
+    formData.email.trim() &&
     formData.username.trim() &&
     formData.password.trim() &&
     formData.confirmPassword.trim() &&
@@ -82,25 +85,27 @@ export function Signup() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleFinish = () => {
+  const handleFinish = async () => {
     if (!selectedMajor || selectedScenes.length === 0) {
       return;
     }
 
     const normalizedUsername = formData.username.trim().toLowerCase();
 
-    login({
-      id: `user_${normalizedUsername || 'new'}`,
-      username: normalizedUsername || 'new_user',
-      name: titleCase(formData.username.trim() || 'New User'),
-      avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${normalizedUsername || 'new'}`,
-      bio: formData.bio.trim(),
-      major: selectedMajor,
-      communities: selectedScenes,
-      notificationsEnabled: true,
-    });
-
-    navigate('/');
+    try {
+      setSignupError('');
+      await signup({
+        email: formData.email.trim(),
+        password: formData.password,
+        username: normalizedUsername || 'new_user',
+        name: titleCase(formData.username.trim() || 'New User'),
+        college: selectedMajor,
+      });
+      navigate('/');
+    } catch (err) {
+      console.error('Error signing up:', err);
+      setSignupError(err.message || 'Failed to sign up. Please try again.');
+    }
   };
 
   return step === 1 ? (
@@ -126,6 +131,7 @@ export function Signup() {
       onSceneToggle={handleSceneToggle}
       onBack={() => setStep(1)}
       onFinish={handleFinish}
+      error={signupError}
     />
   );
 }
@@ -194,6 +200,10 @@ function ProfileSetupStep({
             </div>
 
             <div className="space-y-5">
+              <Field label="College Email">
+                <Input type="email" value={formData.email} onChange={onChange('email')} placeholder="you@university.edu" className="h-16 text-xl font-bold" />
+              </Field>
+
               <Field label="Username">
                 <Input value={formData.username} onChange={onChange('username')} placeholder="Enter username" className="h-16 text-xl font-bold" />
               </Field>
@@ -265,6 +275,7 @@ function ChooseTribeStep({
   onSceneToggle,
   onBack,
   onFinish,
+  error,
 }) {
   return (
     <div className="min-h-screen bg-neoBg">
@@ -371,7 +382,12 @@ function ChooseTribeStep({
           </div>
         </div>
 
-        <div className="sticky bottom-4 mt-8">
+        <div className="sticky bottom-4 mt-8 flex flex-col gap-2">
+          {error && (
+            <div className="bg-red-500 border-[3px] border-neoBorder text-white px-4 py-3 text-sm font-black uppercase text-center shadow-neo">
+              {error}
+            </div>
+          )}
           <button
             type="button"
             onClick={onFinish}

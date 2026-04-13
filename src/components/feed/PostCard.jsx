@@ -14,11 +14,17 @@ export function PostCard({ post }) {
   let isYou = false;
 
   if (post.isAnonymous) {
-    isYou = user?.id === post.originalAuthorId;
+    isYou = user?.uid === post.userId;
   } else if (post.author) {
+    // If you plan to denormalize author info on the post later
     displayName = `@${post.author.username}`;
     displayAvatar = post.author.avatar;
-    isYou = user?.id === post.author.id;
+    isYou = user?.uid === post.userId;
+  } else {
+    // fallback if no author object but we have userId
+    isYou = user?.uid === post.userId;
+    // placeholder if not anonymous but author object missing
+    displayName = `@user_${post.userId?.slice(0, 4) || 'unknown'}`;
   }
 
   return (
@@ -60,9 +66,9 @@ export function PostCard({ post }) {
 
       <div className="flex items-center border-t-[3px] border-neoBorder divide-x-[3px] divide-neoBorder">
         <ActionButton active={post.isLiked} onClick={() => toggleLike(post.id)} icon={<Heart className={`h-5 w-5 ${post.isLiked ? 'fill-current' : ''}`} />}>
-          {post.likes}
+          {post.likesCount || 0}
         </ActionButton>
-        <ActionButton icon={<MessageSquare className="h-5 w-5" />}>{post.comments}</ActionButton>
+        <ActionButton icon={<MessageSquare className="h-5 w-5" />}>{post.commentsCount || 0}</ActionButton>
         <ActionButton icon={<Share2 className="h-5 w-5" />} />
       </div>
     </article>

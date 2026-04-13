@@ -5,7 +5,11 @@ import { DraftsModal } from '../components/modals/DraftsModal';
 import { ToggleSwitch } from '../components/ui/ToggleSwitch';
 import { useUiStore } from '../store/uiStore';
 
-const zones = ['Campus Pulse', 'Library Board', 'Weekend Warriors', 'Design Dungeon'];
+import { addDoc, collection } from 'firebase/firestore';
+import { db } from '../firebase/config';
+import { useAuthStore } from '../store/authStore';
+
+const zones = ['meme', 'rant', 'event', 'discussion'];
 
 export function CreatePost() {
   const navigate = useNavigate();
@@ -37,12 +41,30 @@ export function CreatePost() {
     closeDrafts();
   };
 
-  const handleSubmit = () => {
-    if (!content.trim()) {
+  const user = useAuthStore((state) => state.user);
+
+  const handleSubmit = async () => {
+    if (!content.trim() || !user) {
       return;
     }
 
-    navigate('/');
+    try {
+      await addDoc(collection(db, 'posts'), {
+        userId: user.id || user.uid,
+        title,
+        content,
+        likesCount: 0,
+        commentsCount: 0,
+        isFlagged: false,
+        category: selectedZone,
+        status: ghostMode ? 'pending_review' : 'approved',
+        isAnonymous: ghostMode,
+        createdAt: new Date().toISOString(),
+      });
+      navigate('/');
+    } catch (err) {
+      console.error('Error creating post:', err);
+    }
   };
 
   return (

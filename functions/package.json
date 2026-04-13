@@ -15,11 +15,12 @@
     "node": "22"
   },
   "dependencies": {
+    "@imagekit/nodejs": "^7.4.0",
     "firebase-admin": "^13.0.0",
-    "firebase-functions": "^6.3.0",
-    "@imagekit/nodejs": "^7.4.0"
+    "firebase-functions": "^6.3.0"
   },
   "devDependencies": {
-    "firebase-functions-test": "^3.4.0"
+    "firebase-functions-test": "^3.4.0",
+    "jest": "^30.3.0"
   }
 }
