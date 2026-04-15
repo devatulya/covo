@@ -27,12 +27,12 @@ export const useAuthStore = create((set, get) => ({
             loading: false,
           });
         } else {
-          // If firestore doc is missing, just fallback
-          set({
-            user: { uid: firebaseUser.uid, id: firebaseUser.uid, email: firebaseUser.email },
+          // If firestore doc is missing, preserve the staged memory data if any
+          set((state) => ({
+            user: { ...state.user, uid: firebaseUser.uid, id: firebaseUser.uid, email: firebaseUser.email },
             isAuthenticated: true,
             loading: false,
-          });
+          }));
         }
       } else {
         set({ user: null, isAuthenticated: false, loading: false });
@@ -45,13 +45,10 @@ export const useAuthStore = create((set, get) => ({
   },
 
   signup: async ({ email, password, username, name, college }) => {
-    // 1. Proactive check to see if email is already in our users collection
-    const usersRef = collection(db, 'users');
-    const q = query(usersRef, where('email', '==', email));
-    const querySnapshot = await getDocs(q);
-    
-    if (!querySnapshot.empty) {
-      throw new Error('User already exists. Please login instead.');
+    // 1. Check Username availability
+    const usernameDoc = await getDoc(doc(db, 'usernames', username));
+    if (usernameDoc.exists()) {
+      throw new Error('Username already exists');
     }
 
     let userCredential;
@@ -66,26 +63,31 @@ export const useAuthStore = create((set, get) => ({
     
     const userId = userCredential.user.uid;
 
-    const newUserProfile = {
-      userId,
-      username,
-      name: name || username,
-      email,
-      college: college || 'University',
-      createdAt: new Date().toISOString(),
-      avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`,
-      notificationsEnabled: true,
-    };
-
-    // Save profile to Firestore
-    await setDoc(doc(db, 'users', userId), newUserProfile);
-    
-    // update state will be handled automatically by onAuthStateChanged,
-    // but we can enforce local update here if we want
+    // Stage the user in local memory entirely. DO NOT push to Firestore 'users' collection yet!
+    // It will be bulk uploaded when ChooseTribe concludes.
+    set((state) => ({
+      user: {
+        ...state.user,
+        userId,
+        uid: userId,
+        email,
+        username,
+        name: name || username,
+        college: college || 'University',
+        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`,
+        notificationsEnabled: true
+      }
+    }));
   },
 
   logout: async () => {
     await signOut(auth);
+  },
+
+  setStagedProfile: (partialUser) => {
+    set((state) => ({
+      user: { ...state.user, ...partialUser }
+    }));
   },
 
   updateProfile: async (partialUser) => {
@@ -93,8 +95,22 @@ export const useAuthStore = create((set, get) => ({
     if (!currentUser) return;
 
     const userDocRef = doc(db, 'users', currentUser.uid);
-    await updateDoc(userDocRef, partialUser);
+    // Use setDoc with merge: true so it creates the document if it wasn't made during signup
+    const finalData = { ...currentUser, ...partialUser, createdAt: currentUser.createdAt || new Date().toISOString() };
+    await setDoc(userDocRef, finalData, { merge: true });
     
+    // Also reserve the username permanently here since it was deferred from signup
+    if (finalData.username) {
+      await setDoc(doc(db, 'usernames', finalData.username), { uid: currentUser.uid });
+    }
+    
+    if (partialUser.prn) {
+      await setDoc(doc(db, 'auth_identifiers', partialUser.prn.trim()), { email: currentUser.email });
+    }
+    if (partialUser.phoneNumber) {
+      await setDoc(doc(db, 'auth_identifiers', partialUser.phoneNumber.trim()), { email: currentUser.email });
+    }
+
     set((state) => ({
       user: { ...state.user, ...partialUser }
     }));

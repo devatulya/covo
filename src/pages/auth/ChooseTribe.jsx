@@ -1,6 +1,7 @@
 import React from 'react';
 import { ArrowLeft, ArrowRight, ChevronDown, Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useAuthStore } from '../../store/authStore';
 
 const tribeFilters = ['ALL', 'SPORTS', 'ARTS', 'GREEK', 'TECH'];
 
@@ -19,6 +20,7 @@ const sceneOptions = [
 
 export function ChooseTribe() {
   const navigate = useNavigate();
+  const { user, updateProfile } = useAuthStore(state => ({ user: state.user, updateProfile: state.updateProfile }));
   const [selectedFilter, setSelectedFilter] = React.useState('ALL');
   const [searchTerm, setSearchTerm] = React.useState('');
   const [selectedMajor, setSelectedMajor] = React.useState(majors[0]);
@@ -38,17 +40,34 @@ export function ChooseTribe() {
   };
 
   const handleBack = () => {
-    // Navigates back to home since account is already created
-    navigate('/');
+    navigate(-1);
   };
 
   const handleFinish = async () => {
     if (!selectedMajor || selectedScenes.length === 0) {
+      setError('Please select your major and scene to proceed.');
       return;
     }
+    setError('');
     
-    // Saarthak: Add your updateProfile workflow here to save tribes to Firestore
-    navigate('/');
+    try {
+      // Commit the staged profile details (PRN, Name) along with the finalized Tribe selections to Firebase
+      await updateProfile({
+        name: user.name,
+        prn: user.prn || '',
+        college: user.college,
+        phoneNumber: user.phoneNumber || '',
+        bio: user.bio,
+        avatar: user.avatar,
+        major: selectedMajor,
+        tribes: selectedScenes,
+        registrationCompleted: true
+      });
+      navigate('/');
+    } catch (err) {
+      console.error(err);
+      setError('Failed to finalize your profile. Please try again.');
+    }
   };
 
   return (
