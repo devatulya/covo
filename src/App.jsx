@@ -10,6 +10,8 @@ import { Settings } from './pages/Settings';
 import { Landing } from './pages/auth/Landing';
 import { Login } from './pages/auth/Login';
 import { Signup } from './pages/auth/Signup';
+import { CompleteProfile } from './pages/auth/CompleteProfile';
+import { UploadIdCard } from './pages/auth/UploadIdCard';
 import { ChooseTribe } from './pages/auth/ChooseTribe';
 import { useAuthStore } from './store/authStore';
 import { useUiStore } from './store/uiStore';
@@ -54,6 +56,8 @@ export default function App() {
         <Route path="/landing" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
+        <Route path="/complete-profile" element={<CompleteProfile />} />
+        <Route path="/upload-id" element={<UploadIdCard />} />
         <Route path="/choose-tribe" element={<ChooseTribe />} />
 
         <Route

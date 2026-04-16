@@ -1,24 +1,56 @@
 import React from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
+import { getDoc, doc } from 'firebase/firestore';
+import { db } from '../../firebase/config';
 import { Input } from '../../components/ui/Input';
 import { useAuthStore } from '../../store/authStore';
 
 export function Login() {
-  const login = useAuthStore((state) => state.login);
+  const { login, isAuthenticated } = useAuthStore((state) => ({ login: state.login, isAuthenticated: state.isAuthenticated }));
   const navigate = useNavigate();
 
   const [email, setEmail] = React.useState('');
   const [password, setPassword] = React.useState('');
+  const [error, setError] = React.useState('');
+  const [isLoading, setIsLoading] = React.useState(false);
+
+  React.useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/');
+    }
+  }, [isAuthenticated, navigate]);
 
   const handleLogin = async (event) => {
     event.preventDefault();
+    if (isLoading) return;
+    setError('');
+    setIsLoading(true);
 
     try {
-      await login({ email, password });
-      navigate('/');
+      let targetEmail = email.trim();
+      
+      // If input isn't an email format, we look up the auth_identifiers mapped email
+      if (!targetEmail.includes('@')) {
+         const mappingDoc = await getDoc(doc(db, 'auth_identifiers', targetEmail));
+         if (mappingDoc.exists()) {
+             targetEmail = mappingDoc.data().email;
+         } else {
+             setError('Account not found with this PRN or Phone Number.');
+             return;
+         }
+      }
+
+      await login({ email: targetEmail, password });
+      // The useEffect will trigger routing when global auth state fully matures
     } catch (err) {
       console.error('Error logging in:', err);
+      setIsLoading(false);
+      if (err.message.includes('auth/invalid-credential') || err.message.includes('auth/wrong-password')) {
+        setError('Incorrect credentials.');
+      } else {
+        setError('Failed to log in. Please try again.');
+      }
     }
   };
 
@@ -59,8 +91,8 @@ export function Login() {
 
           <div className="space-y-5">
             <div className="space-y-2">
-              <label className="text-xs font-black uppercase tracking-[0.2em]">College Email</label>
-              <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@university.edu" className="h-14 text-base font-black uppercase" required />
+              <label className="text-xs font-black uppercase tracking-[0.2em]">Email, Phone, or PRN</label>
+              <Input type="text" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@university.edu / PRN / 987654..." className="h-14 text-base font-black uppercase" required />
             </div>
 
             <div className="space-y-2">
@@ -69,11 +101,18 @@ export function Login() {
             </div>
           </div>
 
+          {error && (
+            <div className="mt-6 bg-red-500 border-[3px] border-neoBorder text-white px-4 py-3 text-sm font-black uppercase text-center shadow-neo">
+              {error}
+            </div>
+          )}
+
           <button
             type="submit"
-            className="mt-8 w-full border-[3px] border-neoBorder bg-neoPurple py-4 text-lg font-black uppercase text-white shadow-neo"
+            disabled={isLoading}
+            className={`mt-8 w-full border-[3px] border-neoBorder py-4 text-lg font-black uppercase text-white shadow-neo transition-all ${isLoading ? 'bg-neoMuted cursor-not-allowed opacity-70' : 'bg-neoPurple active:scale-95'}`}
           >
-            Log in
+            {isLoading ? 'Verifying...' : 'Log in'}
           </button>
 
           <div className="mt-8 flex flex-col gap-4 text-sm font-black uppercase md:flex-row md:items-center md:justify-between">

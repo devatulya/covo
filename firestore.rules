@@ -3,6 +3,21 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // ─── USERNAMES (Public uniqueness check) ────────────────
+    match /usernames/{username} {
+      allow get: if true;
+      allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;
+      allow update, delete: if false;
+    }
+
+    // ─── AUTH IDENTIFIERS (Public login lookup mapping) ─────
+    match /auth_identifiers/{identifier} {
+      allow get: if true;
+      allow create: if request.auth != null;
+      allow update: if request.auth != null;
+      allow delete: if false;
+    }
+
     // ─── USERS ───────────────────────────────────────────────
     match /users/{userId} {
       // Any authenticated user can read profiles

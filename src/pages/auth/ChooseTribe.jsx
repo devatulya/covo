@@ -26,7 +26,7 @@ const sceneOptions = [
 
 export function ChooseTribe() {
   const navigate = useNavigate();
-  const { updateProfile, user } = useAuthStore();
+  const { user, updateProfile } = useAuthStore(state => ({ user: state.user, updateProfile: state.updateProfile }));
   const [selectedFilter, setSelectedFilter] = React.useState('ALL');
   const [searchTerm, setSearchTerm] = React.useState('');
   const [selectedMajor, setSelectedMajor] = React.useState(majors[0].id);
@@ -47,12 +47,12 @@ export function ChooseTribe() {
   };
 
   const handleBack = () => {
-    navigate('/');
+    navigate(-1);
   };
 
   const handleFinish = async () => {
     if (!selectedMajor || selectedScenes.length === 0) {
-      setError('Please select your major and at least one scene!');
+      setError('Please select your branch and at least one community!');
       return;
     }
 
@@ -60,15 +60,23 @@ export function ChooseTribe() {
     setError('');
 
     try {
+      // Commit the staged profile details along with the finalized Tribe selections
       await updateProfile({
+        name: user?.name,
+        prn: user?.prn || '',
+        college: user?.college,
+        phoneNumber: user?.phoneNumber || '',
+        bio: user?.bio || '',
+        avatar: user?.avatar || '',
         major: selectedMajor,
-        scenes: selectedScenes,
+        tribes: selectedScenes,
+        registrationCompleted: true,
         onboardingComplete: true
       });
       navigate('/');
     } catch (err) {
       console.error('Error updating profile:', err);
-      setError('Failed to save your tribes. Please try again.');
+      setError('Failed to finalize your profile. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -107,6 +115,7 @@ export function ChooseTribe() {
                 <h2 className="text-2xl font-black uppercase tracking-tight">Select your branch</h2>
                 <span className="text-xs font-black uppercase text-neoMuted border-[2px] border-neoBorder px-2 py-1 bg-neoSurface">Required</span>
               </div>
+              
               {/* Mobile Dropdown (Compact) */}
               <div className="sm:hidden">
                 <div className="relative">

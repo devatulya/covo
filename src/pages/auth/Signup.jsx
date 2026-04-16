@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowLeft, Camera, GraduationCap, IdCard } from 'lucide-react';
+import { ArrowLeft, GraduationCap, IdCard } from 'lucide-react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Input } from '../../components/ui/Input';
 import { useAuthStore } from '../../store/authStore';
@@ -23,7 +23,6 @@ export function Signup() {
     username: '',
     password: '',
     confirmPassword: '',
-    bio: '',
   });
   const [signupError, setSignupError] = React.useState('');
 
@@ -37,7 +36,6 @@ export function Signup() {
     formData.username.trim() &&
     formData.password.trim() &&
     formData.confirmPassword.trim() &&
-    formData.bio.trim() &&
     !passwordMismatch;
 
   const handleFieldChange = (field) => (event) => {
@@ -47,23 +45,40 @@ export function Signup() {
   const handleContinue = async () => {
     if (!canContinueProfile) return;
 
+    const emailStr = formData.email.trim();
+
+    // Validating college email
+    if (signupMethod === 'email') {
+      const isValidCollegeEmail = /(\.edu(\.[a-zA-Z]+)?|\.ac(\.[a-zA-Z]+)?)$/i.test(emailStr);
+      if (!isValidCollegeEmail) {
+        setSignupError('Please use a valid college email ending in .edu or .ac');
+        return;
+      }
+    }
+
     const normalizedUsername = formData.username.trim().toLowerCase();
 
     try {
       setSignupError('');
-      // We will now create the user right away with the Step 1 data!
+      // Create user
       await signup({
-        email: formData.email.trim(),
+        email: emailStr,
         password: formData.password,
         username: normalizedUsername || 'new_user',
         name: titleCase(formData.username.trim() || 'New User'),
-        bio: formData.bio.trim(),
       });
-      // Route user to Saarthak's page!
-      navigate('/choose-tribe');
+      // Route user to Complete Profile page
+      navigate(`/complete-profile?method=${signupMethod}`);
     } catch (err) {
       console.error('Error signing up:', err);
-      setSignupError(err.message || 'Failed to sign up. Please try again.');
+      // Clean up Firebase errors
+      if (err.message === 'Username already exists') {
+        setSignupError('Username already exists');
+      } else if (err.message.includes('auth/email-already-in-use')) {
+        setSignupError('Email already exists try logging in');
+      } else {
+        setSignupError(err.message || 'Failed to sign up. Please try again.');
+      }
     }
   };
 
@@ -123,30 +138,20 @@ function ProfileSetupStep({
                 {methodLabel}
               </div>
               <h1 className="text-4xl font-black uppercase leading-none tracking-tight md:text-6xl">
-                Complete
+                Get
                 <br />
-                your setup
+                Started
               </h1>
               <p className="mt-5 text-sm font-semibold leading-relaxed text-neoMuted">
-                Set the essentials now so the rest of the onboarding can focus on the communities and scenes you want.
+                Set up your basic account details to enter the campus grid.
               </p>
             </div>
           </div>
 
           <div className="surface-panel w-full max-w-2xl border-[3px] border-neoBorder p-5 shadow-neo md:p-8">
-            <div className="mb-8 flex justify-center md:justify-start">
-              <button
-                type="button"
-                className="flex h-36 w-36 rotate-[-2deg] flex-col items-center justify-center gap-3 border-[3px] border-neoBorder bg-neoPink text-white shadow-neo"
-              >
-                <Camera className="h-10 w-10 stroke-[3px]" />
-                <span className="text-sm font-black uppercase leading-none">Add photo</span>
-              </button>
-            </div>
-
             <div className="space-y-5">
-              <Field label="College Email">
-                <Input type="email" value={formData.email} onChange={onChange('email')} placeholder="you@university.edu" className="h-16 text-xl font-bold" />
+              <Field label={signupMethod === 'id' ? 'Email ID' : 'College Email'}>
+                <Input type="email" value={formData.email} onChange={onChange('email')} placeholder={signupMethod === 'id' ? 'you@email.com' : 'you@university.edu'} className="h-16 text-xl font-bold" />
               </Field>
 
               <Field label="Username">
@@ -177,15 +182,6 @@ function ProfileSetupStep({
                 <p className="text-sm font-black uppercase text-red-500">Passwords need to match before you continue.</p>
               ) : null}
 
-              <Field label="Bio">
-                <textarea
-                  value={formData.bio}
-                  onChange={onChange('bio')}
-                  placeholder="Tell us something about yourself..."
-                  className="min-h-[180px] w-full resize-none border-[3px] border-neoBorder bg-neoSurface p-4 text-xl font-bold text-neoText shadow-neo outline-none placeholder:text-neoMuted"
-                />
-              </Field>
-              
               {error && (
                 <div className="bg-red-500 border-[3px] border-neoBorder text-white px-4 py-3 text-sm font-black uppercase text-center shadow-neo">
                   {error}
@@ -196,14 +192,14 @@ function ProfileSetupStep({
                 type="button"
                 onClick={onContinue}
                 disabled={!canContinueProfile}
-                className="mt-6 w-full border-[3px] border-neoBorder bg-neoYellow py-5 text-3xl font-black uppercase shadow-neo disabled:cursor-not-allowed disabled:opacity-50"
+                className="mt-6 w-full border-[3px] border-neoBorder bg-neoYellow py-5 text-3xl font-black uppercase shadow-neo disabled:cursor-not-allowed disabled:opacity-50 transition-transform active:scale-95"
               >
-                LFG
+                LET'S GO
               </button>
 
               <div className="pt-2 text-center">
-                <Link to="/login" className="text-sm font-black uppercase underline">
-                  Back to login
+                <Link to="/login" className="text-sm font-black uppercase underline hover:text-neoPurple">
+                  Already have an account? Log in
                 </Link>
               </div>
             </div>
