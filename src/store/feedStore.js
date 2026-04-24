@@ -5,127 +5,197 @@ import {
   orderBy, 
   limit, 
   getDocs, 
-  startAfter, 
+  startAfter,
+  where,
   doc, 
   setDoc, 
   deleteDoc,
-  where
 } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { useAuthStore } from './authStore';
 
+const PAGE_SIZE = 10;
+
 export const useFeedStore = create((set, get) => ({
+  // ── Global feed ──────────────────────────────────────────────────────────
+  globalPosts: [],
+  globalLoading: false,
+  globalHasMore: true,
+  globalLastVisible: null,
+
+  // ── College feed ─────────────────────────────────────────────────────────
+  collegePosts: [],
+  collegeLoading: false,
+  collegeHasMore: true,
+  collegeLastVisible: null,
+
+  // ── Keep a flat posts[] alias so PostCard / toggleLike still work ─────────
   posts: [],
   loading: false,
   hasMore: true,
   lastVisible: null,
 
-  fetchPosts: async (force = false) => {
-    if (get().loading && !force) return;
-
-    set({ loading: true });
+  // ── Global feed fetch ─────────────────────────────────────────────────────
+  fetchGlobalPosts: async (force = false) => {
+    if (get().globalLoading && !force) return;
+    set({ globalLoading: true, loading: true });
 
     try {
-      const postsRef = collection(db, 'posts');
-      // Only fetch posts that are approved (or pending if we want users to see them, but typically active feed is approved)
-      // Usually, feed queries should filter by status == "approved".
-      // Wait, let's just fetch all ordered by createdAt for now.
-      const q = query(postsRef, orderBy('createdAt', 'desc'), limit(10));
-      
-      const querySnapshot = await getDocs(q);
-      const posts = [];
-      
-      querySnapshot.forEach((doc) => {
-        posts.push({ id: doc.id, ...doc.data(), isLiked: false }); // We'll assume not liked initially, or fetch likes separately
-      });
-
-      const lastVisible = querySnapshot.docs[querySnapshot.docs.length - 1];
+      const q = query(
+        collection(db, 'posts'),
+        where('status', '==', 'approved'),
+        orderBy('createdAt', 'desc'),
+        limit(PAGE_SIZE),
+      );
+      const snap = await getDocs(q);
+      const posts = snap.docs.map((d) => ({ id: d.id, ...d.data(), isLiked: false }));
+      const last = snap.docs[snap.docs.length - 1] ?? null;
 
       set({
-        posts,
+        globalPosts: posts,
+        posts,                         // keep alias in sync
+        globalLoading: false,
         loading: false,
-        hasMore: querySnapshot.docs.length === 10,
-        lastVisible
+        globalHasMore: snap.docs.length === PAGE_SIZE,
+        globalLastVisible: last,
       });
-    } catch (error) {
-      console.error('Error fetching posts:', error);
-      set({ loading: false });
+    } catch (err) {
+      console.error('fetchGlobalPosts error:', err);
+      set({ globalLoading: false, loading: false });
     }
   },
 
-  appendPosts: async () => {
-    if (get().loading || !get().hasMore) return;
-
-    const { lastVisible } = get();
-    if (!lastVisible) return;
-
-    set({ loading: true });
+  appendGlobalPosts: async () => {
+    const { globalLoading, globalHasMore, globalLastVisible } = get();
+    if (globalLoading || !globalHasMore || !globalLastVisible) return;
+    set({ globalLoading: true, loading: true });
 
     try {
-      const postsRef = collection(db, 'posts');
-      const q = query(postsRef, orderBy('createdAt', 'desc'), startAfter(lastVisible), limit(10));
-      
-      const querySnapshot = await getDocs(q);
-      const newPosts = [];
-      
-      querySnapshot.forEach((doc) => {
-        newPosts.push({ id: doc.id, ...doc.data(), isLiked: false });
-      });
-
-      const nextLastVisible = querySnapshot.docs[querySnapshot.docs.length - 1] || null;
+      const q = query(
+        collection(db, 'posts'),
+        where('status', '==', 'approved'),
+        orderBy('createdAt', 'desc'),
+        startAfter(globalLastVisible),
+        limit(PAGE_SIZE),
+      );
+      const snap = await getDocs(q);
+      const newPosts = snap.docs.map((d) => ({ id: d.id, ...d.data(), isLiked: false }));
+      const last = snap.docs[snap.docs.length - 1] ?? null;
 
       set((state) => ({
-        posts: [...state.posts, ...newPosts],
+        globalPosts: [...state.globalPosts, ...newPosts],
+        posts: [...state.globalPosts, ...newPosts],
+        globalLoading: false,
         loading: false,
-        hasMore: querySnapshot.docs.length === 10,
-        lastVisible: nextLastVisible
+        globalHasMore: snap.docs.length === PAGE_SIZE,
+        globalLastVisible: last,
       }));
-    } catch (error) {
-      console.error('Error appending posts:', error);
-      set({ loading: false });
+    } catch (err) {
+      console.error('appendGlobalPosts error:', err);
+      set({ globalLoading: false, loading: false });
     }
   },
 
+  // ── College feed fetch ────────────────────────────────────────────────────
+  fetchCollegePosts: async (force = false) => {
+    const college = useAuthStore.getState().user?.college;
+    if (!college) return;
+    if (get().collegeLoading && !force) return;
+    set({ collegeLoading: true });
+
+    try {
+      const q = query(
+        collection(db, 'posts'),
+        where('college', '==', college),
+        where('status', '==', 'approved'),
+        orderBy('createdAt', 'desc'),
+        limit(PAGE_SIZE),
+      );
+      const snap = await getDocs(q);
+      const posts = snap.docs.map((d) => ({ id: d.id, ...d.data(), isLiked: false }));
+      const last = snap.docs[snap.docs.length - 1] ?? null;
+
+      set({
+        collegePosts: posts,
+        collegeLoading: false,
+        collegeHasMore: snap.docs.length === PAGE_SIZE,
+        collegeLastVisible: last,
+      });
+    } catch (err) {
+      console.error('fetchCollegePosts error:', err);
+      set({ collegeLoading: false });
+    }
+  },
+
+  appendCollegePosts: async () => {
+    const college = useAuthStore.getState().user?.college;
+    const { collegeLoading, collegeHasMore, collegeLastVisible } = get();
+    if (!college || collegeLoading || !collegeHasMore || !collegeLastVisible) return;
+    set({ collegeLoading: true });
+
+    try {
+      const q = query(
+        collection(db, 'posts'),
+        where('college', '==', college),
+        where('status', '==', 'approved'),
+        orderBy('createdAt', 'desc'),
+        startAfter(collegeLastVisible),
+        limit(PAGE_SIZE),
+      );
+      const snap = await getDocs(q);
+      const newPosts = snap.docs.map((d) => ({ id: d.id, ...d.data(), isLiked: false }));
+      const last = snap.docs[snap.docs.length - 1] ?? null;
+
+      set((state) => ({
+        collegePosts: [...state.collegePosts, ...newPosts],
+        collegeLoading: false,
+        collegeHasMore: snap.docs.length === PAGE_SIZE,
+        collegeLastVisible: last,
+      }));
+    } catch (err) {
+      console.error('appendCollegePosts error:', err);
+      set({ collegeLoading: false });
+    }
+  },
+
+  // ── Legacy aliases (kept so nothing else breaks) ──────────────────────────
+  fetchPosts: async (force = false) => get().fetchGlobalPosts(force),
+  appendPosts: async () => get().appendGlobalPosts(),
+
+  // ── Like toggle (works across both feeds) ─────────────────────────────────
   toggleLike: async (postId) => {
     const user = useAuthStore.getState().user;
     if (!user) return;
 
-    const postIndex = get().posts.findIndex(p => p.id === postId);
-    if (postIndex === -1) return;
+    const toggle = (list) =>
+      list.map((p) =>
+        p.id !== postId
+          ? p
+          : { ...p, isLiked: !p.isLiked, likesCount: p.isLiked ? Math.max(0, (p.likesCount || 0) - 1) : (p.likesCount || 0) + 1 },
+      );
 
-    const post = get().posts[postIndex];
-    const isLiked = post.isLiked;
-
-    // Optimistic UI update
-    set((state) => {
-      const newPosts = [...state.posts];
-      newPosts[postIndex] = {
-        ...post,
-        isLiked: !isLiked,
-        likesCount: isLiked ? Math.max(0, post.likesCount - 1) : (post.likesCount || 0) + 1
-      };
-      return { posts: newPosts };
-    });
+    set((state) => ({
+      globalPosts:  toggle(state.globalPosts),
+      collegePosts: toggle(state.collegePosts),
+      posts:        toggle(state.posts),
+    }));
 
     try {
       const likeRef = doc(db, 'posts', postId, 'likes', user.uid);
-      if (isLiked) {
-        await deleteDoc(likeRef);
-      } else {
+      const post = [...get().globalPosts, ...get().collegePosts].find((p) => p.id === postId);
+      if (post?.isLiked) {
         await setDoc(likeRef, { userId: user.uid, createdAt: new Date().toISOString() });
+      } else {
+        await deleteDoc(likeRef);
       }
-    } catch (error) {
-      console.error('Error toggling like:', error);
-      // Revert optimistic update on failure
-      set((state) => {
-        const newPosts = [...state.posts];
-        const currentPost = newPosts.find(p => p.id === postId);
-        if (currentPost) {
-          currentPost.isLiked = isLiked;
-          currentPost.likesCount = isLiked ? (currentPost.likesCount + 1) : (currentPost.likesCount - 1);
-        }
-        return { posts: newPosts };
-      });
+    } catch (err) {
+      console.error('toggleLike error:', err);
+      // Revert
+      set((state) => ({
+        globalPosts:  toggle(state.globalPosts),
+        collegePosts: toggle(state.collegePosts),
+        posts:        toggle(state.posts),
+      }));
     }
   },
 }));

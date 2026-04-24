@@ -1,7 +1,7 @@
 import React from 'react';
 import { useUiStore } from '../../store/uiStore';
 
-const defaultTabs = ['COLLEGE', 'SUB-COMMUNITIES', 'MY FEED'];
+const defaultTabs = ['GLOBAL', 'COLLEGE'];
 
 export function TopTabs({ tabs = defaultTabs, onSelect }) {
   const { activeTab, setActiveTab } = useUiStore((state) => ({
