@@ -25,6 +25,7 @@ export function Signup() {
     confirmPassword: '',
   });
   const [signupError, setSignupError] = React.useState('');
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   const passwordMismatch =
     formData.password.length > 0 &&
@@ -43,23 +44,23 @@ export function Signup() {
   };
 
   const handleContinue = async () => {
-    if (!canContinueProfile) return;
+    if (!canContinueProfile || isSubmitting) return;
 
     const emailStr = formData.email.trim();
-
-    // Validating college email
-    if (signupMethod === 'email') {
-      const isValidCollegeEmail = /(\.edu(\.[a-zA-Z]+)?|\.ac(\.[a-zA-Z]+)?)$/i.test(emailStr);
-      if (!isValidCollegeEmail) {
-        setSignupError('Please use a valid college email ending in .edu or .ac');
-        return;
-      }
-    }
-
     const normalizedUsername = formData.username.trim().toLowerCase();
 
     try {
+      setIsSubmitting(true);
       setSignupError('');
+
+      // Validating college email
+      if (signupMethod === 'email') {
+        const isValidCollegeEmail = /(\.edu(\.[a-zA-Z]+)?|\.ac(\.[a-zA-Z]+)?)$/i.test(emailStr);
+        if (!isValidCollegeEmail) {
+          throw new Error('Please use a valid college email ending in .edu or .ac');
+        }
+      }
+
       // Create user
       await signup({
         email: emailStr,
@@ -79,6 +80,8 @@ export function Signup() {
       } else {
         setSignupError(err.message || 'Failed to sign up. Please try again.');
       }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -90,6 +93,7 @@ export function Signup() {
       onChange={handleFieldChange}
       onContinue={handleContinue}
       canContinueProfile={canContinueProfile}
+      isSubmitting={isSubmitting}
       error={signupError}
     />
   );
@@ -102,6 +106,7 @@ function ProfileSetupStep({
   onChange,
   onContinue,
   canContinueProfile,
+  isSubmitting,
   error,
 }) {
   const methodIcon =
@@ -191,10 +196,10 @@ function ProfileSetupStep({
               <button
                 type="button"
                 onClick={onContinue}
-                disabled={!canContinueProfile}
+                disabled={!canContinueProfile || isSubmitting}
                 className="mt-6 w-full border-[3px] border-neoBorder bg-neoYellow py-5 text-3xl font-black uppercase shadow-neo disabled:cursor-not-allowed disabled:opacity-50 transition-transform active:scale-95"
               >
-                LET'S GO
+                {isSubmitting ? 'Processing...' : "LET'S GO"}
               </button>
 
               <div className="pt-2 text-center">

@@ -222,7 +222,9 @@ export function CompleteProfile() {
                 disabled={!isFormValid || isSubmitting}
                 className="mt-8 flex w-full items-center justify-between border-[3px] border-neoBorder bg-neoPink px-6 py-5 text-left text-white shadow-neo hover:bg-neoPurple transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <span className="text-2xl font-black uppercase">Continue</span>
+                <span className="text-2xl font-black uppercase">
+                  {isSubmitting ? 'Processing...' : 'Continue'}
+                </span>
                 <ArrowRight className="h-8 w-8 stroke-[3px]" />
               </button>
             </div>

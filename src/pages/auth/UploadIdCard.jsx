@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { ArrowLeft, Upload, ScanLine, CheckCircle2, ShieldCheck, RefreshCcw } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import Tesseract from 'tesseract.js';
@@ -7,6 +7,8 @@ import { useAuthStore } from '../../store/authStore';
 
 export function UploadIdCard() {
   const user = useAuthStore((state) => state.user);
+  const loading = useAuthStore((state) => state.loading);
+  const updateProfile = useAuthStore((state) => state.updateProfile);
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
 
@@ -15,6 +17,22 @@ export function UploadIdCard() {
   const [isScanning, setIsScanning] = useState(false);
   const [scanStatus, setScanStatus] = useState(''); // 'idle', 'scanning', 'success', 'failed'
   const [errorMessage, setErrorMessage] = useState('');
+  const [scanResults, setScanResults] = useState(null);
+
+  // Safety Redirection: If user manually lands here or refreshes without data
+  useEffect(() => {
+    if (!loading && (!user || !user.uid)) {
+      navigate('/signup');
+    }
+  }, [user, loading, navigate]);
+
+  if (loading) {
+    return (
+      <div className="flex h-screen w-screen items-center justify-center bg-neoBg">
+        <div className="text-xl font-black uppercase text-neoText animate-pulse">Initializing Scanner...</div>
+      </div>
+    );
+  }
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -37,27 +55,25 @@ export function UploadIdCard() {
     const collegeStr = (user?.college || '').toLowerCase();
     const prnStr = (user?.prn || '').toLowerCase();
 
-    // Security Fix: Fuzzy PRN Match allows substitution (spoofing). We must use strict OCR-Normalized Inclusion.
-    // Classic OCR confusions: O->0, B->8, I->1, S->5
+    // Normalization patterns for OCR character confusion
     const normalizeForOCR = (str) => {
       return str.replace(/[^a-z0-9]/gi, '')
                 .replace(/[oO]/g, '0')
                 .replace(/[bB]/g, '8')
                 .replace(/[iIlL]/g, '1')
-                .replace(/[sS]/g, '5');
+                .replace(/[sS]/g, '5')
+                .replace(/[gG]/g, '6')
+                .replace(/[zZ]/g, '2');
     };
 
+    // 1. PRN Match (Strict OCR-Normalized Inclusion)
     let prnMatch = 0.0;
     if (prnStr) {
       const normalizedPrn = normalizeForOCR(prnStr);
       const targetLen = normalizedPrn.length;
-      
-      // Split raw extracted text into words safely
       const tokens = cleanExtracted.split(/[\s|:]+/).map(normalizeForOCR).filter(t => t.length > 0);
       
       for (const token of tokens) {
-        // Must be a substring of the real PRN, and missing at most 1 character (e.g. edge cropping)
-        // Rejects arbitrary substitutions like '6' for '8' because it breaks the substring.
         if (token.length >= targetLen - 1 && normalizedPrn.includes(token)) {
            prnMatch = 1.0;
            break;
@@ -65,20 +81,20 @@ export function UploadIdCard() {
       }
     }
     
-    // College might be acronymned by OCR, do a fuzzy inclusion scoring
+    // 2. College Match (Fuzzy Inclusion)
     let collegeScore = 0;
     if (collegeStr) {
       const collegeWords = collegeStr.split(' ').filter(w => w.length > 2);
-      const matches = collegeWords.filter(w => cleanExtracted.includes(w)).length;
+      const matches = collegeWords.filter(w => cleanExtracted.includes(w.toLowerCase())).length;
       collegeScore = collegeWords.length > 0 ? matches / collegeWords.length : 0;
     }
 
-    // Name similarity - using Tesseract text blocks to find closest word combinations
+    // 3. Name Match (Word combination sliding window)
     let nameScore = 0;
     if (nameStr) {
       const allExtractedWords = cleanExtracted.split(' ');
-      // Simple sliding window of length matching the name words
-      const targetLength = nameStr.split(' ').length;
+      const targetWords = nameStr.split(' ');
+      const targetLength = targetWords.length;
       let highestSimilarity = 0;
 
       for (let i = 0; i <= allExtractedWords.length - targetLength; i++) {
@@ -89,19 +105,22 @@ export function UploadIdCard() {
       nameScore = highestSimilarity;
     }
 
-    // Weight the final calculation
-    // PRN is strongest (40%), Name (40%), College (20%)
-    const finalScore = (prnMatch * 0.4) + (nameScore * 0.4) + (collegeScore * 0.2);
+    // Weighting: PRN (50%), Name (30%), College (20%)
+    // Since PRN is the unique identifier, we weigh it heaviest.
+    const finalScore = (prnMatch * 0.5) + (nameScore * 0.3) + (collegeScore * 0.2);
+    
     return {
       score: Math.round(finalScore * 100),
       nameScore: Math.round(nameScore * 100),
       collegeScore: Math.round(collegeScore * 100),
       prnMatch: prnMatch === 1.0,
-      extractedText: extractedText
+      reasons: {
+        prn: prnMatch === 1.0 ? 'Valid' : 'Not Matched',
+        name: nameScore > 0.6 ? 'Valid' : 'Low Similarity',
+        college: collegeScore > 0.5 ? 'Valid' : 'Unconfirmed'
+      }
     };
   };
-
-   const [scanResults, setScanResults] = useState(null);
 
    const preprocessImage = (file) => {
      return new Promise((resolve) => {
@@ -112,10 +131,10 @@ export function UploadIdCard() {
          canvas.width = img.width;
          canvas.height = img.height;
          const ctx = canvas.getContext('2d');
-         // Apply grayscale and push contrast to help Tesseract read text on colored backgrounds (e.g. PRN yellow bar)
-         ctx.filter = 'grayscale(100%) contrast(150%) brightness(110%)';
+         // Aggressive filter for high-contrast OCR
+         ctx.filter = 'grayscale(100%) contrast(180%) brightness(105%)';
          ctx.drawImage(img, 0, 0);
-         resolve(canvas.toDataURL('image/jpeg'));
+         resolve(canvas.toDataURL('image/jpeg', 0.9));
        };
      });
    };
@@ -129,32 +148,37 @@ export function UploadIdCard() {
     setScanResults(null);
 
     try {
-      console.log('Preprocessing secondary image for OCR pass...');
       const processedImage = await preprocessImage(selectedFile);
       
-      console.log('Dispatching parallel Tesseract jobs...');
       const [rawResult, processedResult] = await Promise.all([
         Tesseract.recognize(selectedFile, 'eng'),
         Tesseract.recognize(processedImage, 'eng')
       ]);
 
-      const combinedText = `[RAW PASS]\n${rawResult.data.text}\n\n[FILTER PASS]\n${processedResult.data.text}`;
-      console.log('Extracted Comb-OCR Text:', combinedText);
-      
+      const combinedText = `[RAW]\n${rawResult.data.text}\n[PROC]\n${processedResult.data.text}`;
       const results = calculateMatchScore(combinedText);
-      console.log('Match Results:', results);
-
       setScanResults(results);
 
-      if (results.score >= 70 || results.prnMatch) {
+      // Pass threshold: 75% total OR 100% PRN + 60% Name
+      const isPass = results.score >= 75 || (results.prnMatch && results.nameScore >= 60);
+
+      if (isPass) {
         setScanStatus('success');
+        // Persist the verification status to Firestore
+        await updateProfile({
+          idVerified: true,
+          verificationStatus: 'verified',
+          verificationAttemptAt: new Date().toISOString(),
+          // Note: Image is not stored in Storage as per request, only verification status is confirmed.
+        });
       } else {
         setScanStatus('failed');
+        setErrorMessage('Verification failed. Please ensure your ID card is clearly visible and well-lit.');
       }
     } catch (err) {
-      console.error(err);
+      console.error('OCR Error:', err);
       setScanStatus('failed');
-      setErrorMessage('OCR Engine failed to process the image. Try another.');
+      setErrorMessage('Verification engine encountered an error. Please try again.');
     } finally {
       setIsScanning(false);
     }
@@ -240,15 +264,30 @@ export function UploadIdCard() {
                 
                 <ul className="space-y-3 text-sm font-bold uppercase">
                   <li className="flex flex-col gap-1 border-b-[2px] border-neoBg pb-2">
-                    <div className="flex justify-between items-center text-xs text-neoMuted"><span>Target Name</span> <span>Found: {scanResults.nameScore}%</span></div>
+                    <div className="flex justify-between items-center text-xs text-neoMuted">
+                      <span>Target Name</span> 
+                      <span className={`px-2 py-0.5 border-[2px] border-neoBorder ${scanResults.nameScore > 60 ? 'bg-neoCyan' : 'bg-red-200'}`}>
+                        {scanResults.reasons.name}
+                      </span>
+                    </div>
                     <div className="text-base">{user?.name}</div>
                   </li>
                   <li className="flex flex-col gap-1 border-b-[2px] border-neoBg pb-2">
-                    <div className="flex justify-between items-center text-xs text-neoMuted"><span>Target PRN</span> <span>Found: {scanResults.prnMatch ? 'YES (100%)' : 'NO (0%)'}</span></div>
+                    <div className="flex justify-between items-center text-xs text-neoMuted">
+                      <span>Target PRN</span> 
+                      <span className={`px-2 py-0.5 border-[2px] border-neoBorder ${scanResults.prnMatch ? 'bg-neoCyan' : 'bg-red-200'}`}>
+                        {scanResults.reasons.prn}
+                      </span>
+                    </div>
                     <div className="text-base">{user?.prn || 'Not Provided'}</div>
                   </li>
                   <li className="flex flex-col gap-1 pb-1">
-                    <div className="flex justify-between items-center text-xs text-neoMuted"><span>Target College</span> <span>Found: {scanResults.collegeScore}%</span></div>
+                    <div className="flex justify-between items-center text-xs text-neoMuted">
+                      <span>Target College</span> 
+                      <span className={`px-2 py-0.5 border-[2px] border-neoBorder ${scanResults.collegeScore > 0.5 ? 'bg-neoCyan' : 'bg-red-200'}`}>
+                        {scanResults.reasons.college}
+                      </span>
+                    </div>
                     <div className="truncate text-base">{user?.college}</div>
                   </li>
                 </ul>
