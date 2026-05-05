@@ -52,10 +52,10 @@ export function PostCard({ post }) {
 
       <div className="p-4 text-sm font-semibold leading-relaxed text-neoText">{post.content}</div>
 
-      {post.image ? (
+      {(post.image || post.imageUrl) ? (
         <div className="relative aspect-video border-y-[3px] border-neoBorder bg-neoSurfaceMuted">
           <img
-            src={post.image}
+            src={`${post.image || post.imageUrl}?tr=w-720,q-70`}
             alt="Post"
             loading="lazy"
             onLoad={() => setImageLoaded(true)}

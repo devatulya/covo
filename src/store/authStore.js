@@ -16,20 +16,48 @@ export const useAuthStore = create((set, get) => ({
   initAuth: () => {
     onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
-        // Fetch user profile from Firestore
-        const userDocRef = doc(db, 'users', firebaseUser.uid);
-        const userDoc = await getDoc(userDocRef);
+        try {
+          // Wait for the auth token to fully propagate to Firestore
+          // (avoids "Missing or insufficient permissions" race condition)
+          await firebaseUser.getIdToken(true);
 
-        if (userDoc.exists()) {
-          set({
-            user: { uid: firebaseUser.uid, id: firebaseUser.uid, ...userDoc.data() },
-            isAuthenticated: true,
-            loading: false,
-          });
-        } else {
-          // If firestore doc is missing, preserve the staged memory data if any
+          // Fetch user profile from Firestore
+          const userDocRef = doc(db, 'users', firebaseUser.uid);
+          const userDoc = await getDoc(userDocRef);
+
+          if (userDoc.exists()) {
+            set({
+              user: { uid: firebaseUser.uid, id: firebaseUser.uid, ...userDoc.data() },
+              isAuthenticated: true,
+              loading: false,
+            });
+          } else {
+            // Firestore doc missing = user never finished onboarding.
+            // Mark as authenticated but flag for onboarding redirect.
+            set((state) => ({
+              user: {
+                ...state.user,
+                uid: firebaseUser.uid,
+                id: firebaseUser.uid,
+                email: firebaseUser.email,
+                needsOnboarding: true,
+              },
+              isAuthenticated: true,
+              loading: false,
+            }));
+          }
+        } catch (err) {
+          console.error('initAuth: Error fetching user profile:', err);
+          // On permissions error, still mark authenticated so routing works.
+          // needsOnboarding flag will redirect them to complete their profile.
           set((state) => ({
-            user: { ...state.user, uid: firebaseUser.uid, id: firebaseUser.uid, email: firebaseUser.email },
+            user: {
+              ...state.user,
+              uid: firebaseUser.uid,
+              id: firebaseUser.uid,
+              email: firebaseUser.email,
+              needsOnboarding: true,
+            },
             isAuthenticated: true,
             loading: false,
           }));

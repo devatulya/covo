@@ -1,13 +1,16 @@
 import React from 'react';
-import { ArrowLeft, BarChart2, ChevronDown, Image, Link2, Sparkles } from 'lucide-react';
+import { ArrowLeft, BarChart2, ChevronDown, Image, Link2, Sparkles, ShieldAlert } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { DraftsModal } from '../components/modals/DraftsModal';
 import { ToggleSwitch } from '../components/ui/ToggleSwitch';
 import { useUiStore } from '../store/uiStore';
+import { compressImage, uploadToImageKit } from '../utils/imageKit';
+import { X } from 'lucide-react';
 
 import { addDoc, collection } from 'firebase/firestore';
-import { db } from '../firebase/config';
+import { db, functions } from '../firebase/config';
 import { useAuthStore } from '../store/authStore';
+import { httpsCallable } from 'firebase/functions';
 
 const zones = ['meme', 'rant', 'event', 'discussion'];
 
@@ -18,6 +21,12 @@ export function CreatePost() {
   const [menuOpen, setMenuOpen] = React.useState(false);
   const [content, setContent] = React.useState('');
   const [title, setTitle] = React.useState('');
+  const [imageFile, setImageFile] = React.useState(null);
+  const [imagePreview, setImagePreview] = React.useState(null);
+  const [uploading, setUploading] = React.useState(false);
+  const [moderationError, setModerationError] = React.useState('');
+  const [isChecking, setIsChecking] = React.useState(false);
+  const fileInputRef = React.useRef(null);
 
   const { openDrafts, closeDrafts, getDraftById } = useUiStore((state) => ({
     openDrafts: state.openDrafts,
@@ -41,18 +50,83 @@ export function CreatePost() {
     closeDrafts();
   };
 
+  const handleImageChange = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      setImageFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeImage = () => {
+    setImageFile(null);
+    setImagePreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   const user = useAuthStore((state) => state.user);
 
   const handleSubmit = async () => {
-    if (!content.trim() || !user) {
+    if (!content.trim() || !user || uploading || isChecking) {
       return;
     }
 
+    setModerationError('');
+
+    // ── Step 1: Check content for toxicity via AI ─────────────────────────
+    setIsChecking(true);
     try {
+      const checkToxicity = httpsCallable(functions, 'checkToxicity');
+
+      // Check title and content SEPARATELY so hate in either field is caught
+      const checks = [];
+      if (title.trim()) checks.push(checkToxicity({ text: title.trim(), field: 'title' }));
+      if (content.trim()) checks.push(checkToxicity({ text: content.trim(), field: 'content' }));
+
+      const results = await Promise.all(checks);
+      const blocked = results.find((r) => r.data.isToxic);
+
+      if (blocked) {
+        setModerationError(
+          blocked.data.reason ||
+          'Your post was flagged for toxic content. Please revise it.'
+        );
+        setIsChecking(false);
+        return; // Block the post
+      }
+    } catch (err) {
+      // Fail-closed: block the post if moderation check errors out
+      setModerationError(
+        err?.message?.includes('warming up')
+          ? 'Content check service is warming up. Please try posting again in a few seconds.'
+          : 'Unable to verify content safety. Please try again.'
+      );
+      setIsChecking(false);
+      return;
+    } finally {
+      setIsChecking(false);
+    }
+
+    // ── Step 2: Upload image & save post ─────────────────────────────────
+    setUploading(true);
+    try {
+      let imageUrl = '';
+      if (imageFile) {
+        const compressedBlob = await compressImage(imageFile, 720, 0.6);
+        imageUrl = await uploadToImageKit(compressedBlob, `post_${Date.now()}_${imageFile.name}`);
+      }
+
       await addDoc(collection(db, 'posts'), {
         userId: user.id || user.uid,
         title,
         content,
+        imageUrl,
         likesCount: 0,
         commentsCount: 0,
         isFlagged: false,
@@ -64,6 +138,9 @@ export function CreatePost() {
       navigate('/');
     } catch (err) {
       console.error('Error creating post:', err);
+      alert('Failed to blast it. Check your connection or ImageKit config.');
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -144,14 +221,44 @@ export function CreatePost() {
           <div className="surface-panel flex flex-1 flex-col border-[3px] border-neoBorder shadow-neo">
             <textarea
               value={content}
-              onChange={(event) => setContent(event.target.value.slice(0, 280))}
+              onChange={(event) => { setContent(event.target.value.slice(0, 280)); setModerationError(''); }}
               className="min-h-[280px] flex-1 resize-none bg-transparent p-4 text-sm font-bold leading-relaxed text-neoText outline-none placeholder:text-neoMuted"
               placeholder="Spill the tea... what's happening on campus?"
             />
 
+            {imagePreview && (
+              <div className="relative mx-4 mb-4">
+                <img
+                  src={imagePreview}
+                  alt="Preview"
+                  className="max-h-64 w-full rounded-lg border-[3px] border-neoBorder object-cover shadow-neo-sm"
+                />
+                <button
+                  type="button"
+                  onClick={removeImage}
+                  className="absolute -right-2 -top-2 flex h-8 w-8 items-center justify-center border-[3px] border-neoBorder bg-neoPink text-white shadow-neo-sm"
+                >
+                  <X className="h-4 w-4 stroke-[3px]" />
+                </button>
+              </div>
+            )}
+
             <div className="flex items-center justify-between border-t-[3px] border-neoBorder px-4 py-3">
               <div className="flex items-center gap-3 text-neoMuted">
-                <Image className="h-5 w-5 stroke-[2.5px]" />
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleImageChange}
+                  accept="image/*"
+                  className="hidden"
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="hover:text-neoCyan transition-colors"
+                >
+                  <Image className="h-5 w-5 stroke-[2.5px]" />
+                </button>
                 <Link2 className="h-5 w-5 stroke-[2.5px]" />
                 <BarChart2 className="h-5 w-5 stroke-[2.5px]" />
               </div>
@@ -171,13 +278,24 @@ export function CreatePost() {
             <ToggleSwitch checked={ghostMode} onChange={setGhostMode} aria-label="Toggle ghost mode" />
           </div>
 
+          {/* Moderation Error Banner */}
+          {moderationError && (
+            <div className="flex items-start gap-3 border-[3px] border-neoBorder bg-red-500 p-4 text-white shadow-neo">
+              <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0 stroke-[3px]" />
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.15em]">Content Blocked by AI</p>
+                <p className="mt-1 text-sm font-semibold">{moderationError}</p>
+              </div>
+            </div>
+          )}
+
           <button
             type="button"
             onClick={handleSubmit}
-            disabled={!content.trim()}
+            disabled={!content.trim() || uploading || isChecking}
             className="w-full border-[3px] border-neoBorder bg-neoPink py-4 text-xl font-black uppercase text-white shadow-neo disabled:cursor-not-allowed disabled:opacity-50"
           >
-            Blast it
+            {isChecking ? '🔍 Checking...' : uploading ? 'Blasting...' : 'Blast it'}
           </button>
         </div>
       </div>

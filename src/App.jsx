@@ -17,10 +17,18 @@ import { useAuthStore } from './store/authStore';
 import { useUiStore } from './store/uiStore';
 
 function ProtectedRoute({ children }) {
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const { isAuthenticated, user } = useAuthStore((state) => ({
+    isAuthenticated: state.isAuthenticated,
+    user: state.user,
+  }));
 
   if (!isAuthenticated) {
     return <Navigate to="/landing" replace />;
+  }
+
+  // User signed up but never finished onboarding — redirect them
+  if (user?.needsOnboarding) {
+    return <Navigate to="/complete-profile" replace />;
   }
 
   return children;

@@ -1,5 +1,6 @@
 import React from 'react';
-import { ArrowLeft, Bell, Moon, Settings as SettingsIcon } from 'lucide-react';
+import { ArrowLeft, Bell, Moon, Settings as SettingsIcon, Camera, Loader2 } from 'lucide-react';
+import { compressImage, uploadToImageKit } from '../utils/imageKit';
 import { Link } from 'react-router-dom';
 import { ToggleSwitch } from '../components/ui/ToggleSwitch';
 import { useAuthStore } from '../store/authStore';
@@ -8,10 +9,30 @@ import { useUiStore } from '../store/uiStore';
 const clubAccentMap = ['bg-neoYellow', 'bg-neoCyan', 'bg-neoPink', 'bg-neoSurface'];
 
 export function Profile() {
-  const { user, toggleNotifications } = useAuthStore((state) => ({
+  const { user, toggleNotifications, updateProfile } = useAuthStore((state) => ({
     user: state.user,
     toggleNotifications: state.toggleNotifications,
+    updateProfile: state.updateProfile,
   }));
+  const [uploading, setUploading] = React.useState(false);
+  const fileInputRef = React.useRef(null);
+
+  const handleAvatarChange = async (event) => {
+    const file = event.target.files[0];
+    if (!file || !user) return;
+
+    setUploading(true);
+    try {
+      const compressedBlob = await compressImage(file, 400, 0.7);
+      const imageUrl = await uploadToImageKit(compressedBlob, `avatar_${user.uid}_${Date.now()}`);
+      await updateProfile({ avatar: imageUrl });
+    } catch (err) {
+      console.error('Error updating avatar:', err);
+      alert('Failed to update avatar. Check ImageKit config.');
+    } finally {
+      setUploading(false);
+    }
+  };
   const { theme, toggleTheme, openNotifications } = useUiStore((state) => ({
     theme: state.theme,
     toggleTheme: state.toggleTheme,
@@ -49,8 +70,34 @@ export function Profile() {
         <section className="surface-panel border-[3px] border-neoBorder p-5 shadow-neo md:p-6">
           <div className="flex flex-col gap-6 md:flex-row md:items-center">
             <div className="relative w-max">
-              <div className="h-28 w-28 overflow-hidden border-[3px] border-neoBorder bg-neoYellow shadow-neo md:h-36 md:w-36">
-                {user?.avatar ? <img src={user.avatar} alt={user.name} className="h-full w-full object-cover" /> : null}
+              <div className="h-28 w-28 overflow-hidden border-[3px] border-neoBorder bg-neoYellow shadow-neo md:h-36 md:w-36 group relative">
+                {user?.avatar ? (
+                  <img src={`${user.avatar}${user.avatar.includes('dicebear') ? '' : '?tr=w-300,h-300'}`} alt={user.name} className="h-full w-full object-cover" />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center bg-neoSurfaceMuted text-2xl font-black">
+                    {user?.name?.charAt(0) || user?.username?.charAt(0)}
+                  </div>
+                )}
+                
+                <button 
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                  className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100 disabled:cursor-not-allowed"
+                >
+                  {uploading ? (
+                    <Loader2 className="h-8 w-8 animate-spin text-white" />
+                  ) : (
+                    <Camera className="h-8 w-8 text-white" />
+                  )}
+                </button>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleAvatarChange}
+                  accept="image/*"
+                  className="hidden"
+                />
               </div>
               <div className="absolute -bottom-3 -right-3 border-[3px] border-neoBorder bg-neoCyan px-3 py-1 text-[10px] font-black uppercase shadow-neo-sm">
                 Online

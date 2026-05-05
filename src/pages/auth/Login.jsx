@@ -37,6 +37,7 @@ export function Login() {
              targetEmail = mappingDoc.data().email;
          } else {
              setError('Account not found with this PRN or Phone Number.');
+             setIsLoading(false);
              return;
          }
       }
