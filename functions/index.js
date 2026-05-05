@@ -49,3 +49,9 @@ exports.approvePost = approvePost;
 exports.rejectPost = rejectPost;
 exports.getReports = getReports;
 exports.adminDeletePost = adminDeletePost;
+
+// ─── AI Caption Assistant ─────────────────────────────────────────────────────
+
+// Gemini-powered caption & hashtag suggestions for CreatePost
+const { generateCaptionSuggestions } = require('./src/captions');
+exports.generateCaptionSuggestions = generateCaptionSuggestions;
