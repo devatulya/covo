@@ -10,6 +10,20 @@ import { X } from 'lucide-react';
 import { addDoc, collection } from 'firebase/firestore';
 import { db, functions } from '../firebase/config';
 import { useAuthStore } from '../store/authStore';
+import { HfInference } from '@huggingface/inference';
+
+// --- Moderation Configuration ---
+const HF_MODEL = "martin-ha/toxic-comment-model";
+const TOXICITY_THRESHOLD = 0.60;
+const TOXIC_KEYWORDS = [
+  'i hate', 'hate you', 'hate everyone', 'hate all',
+  'i want to kill', 'kill you', 'kill them', 'kill all',
+  'i want to hurt', 'hurt you', 'hurt everyone',
+  'stupid idiot', 'you are stupid', 'you are an idiot',
+  'go die', 'you should die', 'die you',
+  'piece of shit', 'you suck', 'f*** you', 'f**k you',
+  'shut up', 'nobody likes you', 'you are worthless',
+];
 import { httpsCallable } from 'firebase/functions';
 
 const zones = ['meme', 'rant', 'event', 'discussion'];
@@ -82,31 +96,43 @@ export function CreatePost() {
     // ── Step 1: Check content for toxicity via AI ─────────────────────────
     setIsChecking(true);
     try {
-      const checkToxicity = httpsCallable(functions, 'checkToxicity');
+      const token = import.meta.env.VITE_HF_API_TOKEN;
+      if (!token) throw new Error("Moderation API token missing");
 
-      // Check title and content SEPARATELY so hate in either field is caught
-      const checks = [];
-      if (title.trim()) checks.push(checkToxicity({ text: title.trim(), field: 'title' }));
-      if (content.trim()) checks.push(checkToxicity({ text: content.trim(), field: 'content' }));
+      const hf = new HfInference(token);
 
-      const results = await Promise.all(checks);
-      const blocked = results.find((r) => r.data.isToxic);
+      const checkField = async (text, fieldName) => {
+        const cleanText = text.trim().toLowerCase();
 
-      if (blocked) {
-        setModerationError(
-          blocked.data.reason ||
-          'Your post was flagged for toxic content. Please revise it.'
+        // Layer 1: Keywords
+        const keywordMatch = TOXIC_KEYWORDS.find((kw) => cleanText.includes(kw));
+        if (keywordMatch) return { isToxic: true, reason: `Hate speech detected in ${fieldName}.` };
+
+        // Layer 2: ML Model
+        const result = await hf.textClassification(
+          { model: HF_MODEL, inputs: text.trim() },
+          { wait_for_model: true }
         );
+
+        const topResult = result.reduce((a, b) => (a.score > b.score ? a : b));
+        const isToxic = topResult.label === "LABEL_1" && topResult.score >= TOXICITY_THRESHOLD;
+
+        return { isToxic, score: topResult.score };
+      };
+
+      // Check both fields
+      const titleResult = title.trim() ? await checkField(title, 'headline') : { isToxic: false };
+      const contentResult = await checkField(content, 'content');
+
+      if (titleResult.isToxic || contentResult.isToxic) {
+        setModerationError('Your post was flagged for toxic content. Please revise it.');
         setIsChecking(false);
-        return; // Block the post
+        return;
       }
     } catch (err) {
-      // Fail-closed: block the post if moderation check errors out
-      setModerationError(
-        err?.message?.includes('warming up')
-          ? 'Content check service is warming up. Please try posting again in a few seconds.'
-          : 'Unable to verify content safety. Please try again.'
-      );
+      console.error('[Moderation] Error:', err);
+      // Fail-closed
+      setModerationError('Unable to verify content safety. Please try again.');
       setIsChecking(false);
       return;
     } finally {

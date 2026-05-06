@@ -33,7 +33,7 @@ const TOXICITY_THRESHOLD = 0.60;
  * Request data: { text: string }
  * Response:     { isToxic: boolean, label: string, score: number, reason: string }
  */
-exports.checkToxicity = onCall(async (request) => {
+exports.checkToxicity = onCall({ secrets: ["HF_API_TOKEN"] }, async (request) => {
   // Must be authenticated
   if (!request.auth) {
     throw new HttpsError("unauthenticated", "You must be logged in to post.");
