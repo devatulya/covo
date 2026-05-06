@@ -39,8 +39,13 @@ export function PostCard({ post }) {
                 <span className="border-[3px] border-neoBorder bg-neoYellow px-2 py-0.5 text-[10px] leading-none">You</span>
               ) : null}
             </span>
-            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-neoMuted">
-              {post.isAnonymous ? '2h ago | Library' : '5h ago | Student Union'}
+            <span className="mt-0.5 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-neoMuted">
+              {post.isAnonymous ? 'Anonymous' : null}
+              {post.college ? (
+                <span className="inline-flex items-center gap-1 border-[2px] border-neoBorder bg-neoSurfaceMuted px-1.5 py-0.5 text-[9px] font-black uppercase tracking-[0.15em]">
+                  🎓 {post.college}
+                </span>
+              ) : null}
             </span>
           </div>
         </div>

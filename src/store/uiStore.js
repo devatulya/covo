@@ -73,7 +73,7 @@ function applyTheme(theme) {
 
 export const useUiStore = create((set, get) => ({
   theme: getInitialTheme(),
-  activeTab: 'COLLEGE',
+  activeTab: 'GLOBAL',
   isNotificationsOpen: false,
   isDraftsOpen: false,
   notifications: defaultNotifications,
