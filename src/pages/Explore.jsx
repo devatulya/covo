@@ -5,33 +5,33 @@ import { Link } from 'react-router-dom';
 import { db } from '../firebase/config';
 import { useAuthStore } from '../store/authStore';
 
-const filters = ['All', 'People', 'College', 'Communities'];
+const filters = ['Communities', 'People', 'College'];
 
 const communityDetails = {
-  'Coding Club': { desc: 'Build projects, crack contests, and ship with your campus crew.', category: 'Communities', accent: 'bg-neoCyan' },
-  'AI and Robotics Society': { desc: 'Models, bots, sensors, and late-night experiments.', category: 'Communities', accent: 'bg-neoYellow' },
-  'Cyber Security Cell': { desc: 'CTFs, threat hunting, and security-first thinking.', category: 'Communities', accent: 'bg-neoPink text-white' },
-  'Google Developer Student Club': { desc: 'Developer events, workshops, and product builds.', category: 'Communities', accent: 'bg-neoCyan' },
-  'IEEE Student Branch': { desc: 'Technical talks, paper sessions, and engineering networks.', category: 'Communities', accent: 'bg-neoYellow' },
-  'Entrepreneurship Cell': { desc: 'Startup ideas, pitch nights, and founder energy.', category: 'Communities', accent: 'bg-neoPink text-white' },
-  'Research and Innovation Club': { desc: 'Projects, prototypes, and curious problem solving.', category: 'Communities', accent: 'bg-neoCyan' },
-  'Training and Placement Cell': { desc: 'Placement prep, opportunities, and peer support.', category: 'Communities', accent: 'bg-neoYellow' },
-  'Drama Club': { desc: 'Stage work, scripts, acting, and production chaos.', category: 'Communities', accent: 'bg-neoPink text-white' },
-  'Dance Club': { desc: 'Practice rooms, battles, and performance squads.', category: 'Communities', accent: 'bg-neoCyan' },
-  'Music Club': { desc: 'Jams, vocals, instruments, and open mic nights.', category: 'Communities', accent: 'bg-neoYellow' },
-  'Fine Arts Club': { desc: 'Sketches, posters, murals, and visual culture.', category: 'Communities', accent: 'bg-neoPink text-white' },
-  'Literary Society': { desc: 'Writing, reading, poetry, and campus publications.', category: 'Communities', accent: 'bg-neoCyan' },
-  'Debate Club': { desc: 'Arguments with structure, wit, and microphones.', category: 'Communities', accent: 'bg-neoYellow' },
-  'Photography Club': { desc: 'Shoots, edits, reels, and visual storytelling.', category: 'Communities', accent: 'bg-neoPink text-white' },
-  'Film and Media Club': { desc: 'Short films, edits, screenings, and campus media.', category: 'Communities', accent: 'bg-neoCyan' },
-  'College Magazine Team': { desc: 'Editorials, reports, layouts, and campus voice.', category: 'Communities', accent: 'bg-neoYellow' },
-  'Football Club': { desc: 'Game-day plans, practice talk, and team updates.', category: 'Communities', accent: 'bg-neoPink text-white' },
-  'Cricket Club': { desc: 'Nets, fixtures, selection chatter, and match days.', category: 'Communities', accent: 'bg-neoCyan' },
-  'Basketball Club': { desc: 'Court sessions, squads, and tournament prep.', category: 'Communities', accent: 'bg-neoYellow' },
-  'Badminton Club': { desc: 'Rallies, ladders, and quick evening games.', category: 'Communities', accent: 'bg-neoPink text-white' },
-  'NSS Volunteers': { desc: 'Service work, drives, and social impact projects.', category: 'Communities', accent: 'bg-neoCyan' },
-  'Rotaract Club': { desc: 'Community service, leadership, and event work.', category: 'Communities', accent: 'bg-neoYellow' },
-  'Eco Club': { desc: 'Sustainability, cleanups, and green campus work.', category: 'Communities', accent: 'bg-neoPink text-white' },
+  'Coding Club': { desc: 'Build projects, crack contests, and ship with your campus crew.', category: 'Communities', accent: 'bg-neoCyan', emoji: '💻' },
+  'AI and Robotics Society': { desc: 'Models, bots, sensors, and late-night experiments.', category: 'Communities', accent: 'bg-neoYellow', emoji: '🤖' },
+  'Cyber Security Cell': { desc: 'CTFs, threat hunting, and security-first thinking.', category: 'Communities', accent: 'bg-neoPink text-white', emoji: '🛡️' },
+  'Google Developer Student Club': { desc: 'Developer events, workshops, and product builds.', category: 'Communities', accent: 'bg-neoCyan', emoji: '🚀' },
+  'IEEE Student Branch': { desc: 'Technical talks, paper sessions, and engineering networks.', category: 'Communities', accent: 'bg-neoYellow', emoji: '⚡' },
+  'Entrepreneurship Cell': { desc: 'Startup ideas, pitch nights, and founder energy.', category: 'Communities', accent: 'bg-neoPink text-white', emoji: '💡' },
+  'Research and Innovation Club': { desc: 'Projects, prototypes, and curious problem solving.', category: 'Communities', accent: 'bg-neoCyan', emoji: '🔍' },
+  'Training and Placement Cell': { desc: 'Placement prep, opportunities, and peer support.', category: 'Communities', accent: 'bg-neoYellow', emoji: '👔' },
+  'Drama Club': { desc: 'Stage work, scripts, acting, and production chaos.', category: 'Communities', accent: 'bg-neoPink text-white', emoji: '🎭' },
+  'Dance Club': { desc: 'Practice rooms, battles, and performance squads.', category: 'Communities', accent: 'bg-neoCyan', emoji: '💃' },
+  'Music Club': { desc: 'Jams, vocals, instruments, and open mic nights.', category: 'Communities', accent: 'bg-neoYellow', emoji: '🎸' },
+  'Fine Arts Club': { desc: 'Sketches, posters, murals, and visual culture.', category: 'Communities', accent: 'bg-neoPink text-white', emoji: '🎨' },
+  'Literary Society': { desc: 'Writing, reading, poetry, and campus publications.', category: 'Communities', accent: 'bg-neoCyan', emoji: '📚' },
+  'Debate Club': { desc: 'Arguments with structure, wit, and microphones.', category: 'Communities', accent: 'bg-neoYellow', emoji: '🗣️' },
+  'Photography Club': { desc: 'Shoots, edits, reels, and visual storytelling.', category: 'Communities', accent: 'bg-neoPink text-white', emoji: '📸' },
+  'Film and Media Club': { desc: 'Short films, edits, screenings, and campus media.', category: 'Communities', accent: 'bg-neoCyan', emoji: '🎬' },
+  'College Magazine Team': { desc: 'Editorials, reports, layouts, and campus voice.', category: 'Communities', accent: 'bg-neoYellow', emoji: '📰' },
+  'Football Club': { desc: 'Game-day plans, practice talk, and team updates.', category: 'Communities', accent: 'bg-neoPink text-white', emoji: '⚽' },
+  'Cricket Club': { desc: 'Nets, fixtures, selection chatter, and match days.', category: 'Communities', accent: 'bg-neoCyan', emoji: '🏏' },
+  'Basketball Club': { desc: 'Court sessions, squads, and tournament prep.', category: 'Communities', accent: 'bg-neoYellow', emoji: '🏀' },
+  'Badminton Club': { desc: 'Rallies, ladders, and quick evening games.', category: 'Communities', accent: 'bg-neoPink text-white', emoji: '🏸' },
+  'NSS Volunteers': { desc: 'Service work, drives, and social impact projects.', category: 'Communities', accent: 'bg-neoCyan', emoji: '🤝' },
+  'Rotaract Club': { desc: 'Community service, leadership, and event work.', category: 'Communities', accent: 'bg-neoYellow', emoji: '🎡' },
+  'Eco Club': { desc: 'Sustainability, cleanups, and green campus work.', category: 'Communities', accent: 'bg-neoPink text-white', emoji: '🌿' },
 };
 
 function FisheyeExploreList({ items, joinedCommunities, onToggleCommunity }) {
@@ -123,37 +123,58 @@ const ExploreCard = React.forwardRef(function ExploreCard(
   const joined = isCommunity && joinedCommunities.includes(item.title);
 
   return (
-    <article ref={ref} style={style} className={`surface-panel border-[3px] border-neoBorder p-4 shadow-neo ${className}`}>
+    <article 
+      ref={ref} 
+      style={style} 
+      className={`surface-panel flex h-full min-h-[260px] flex-col border-[3px] border-neoBorder p-4 shadow-neo transition-transform hover:-translate-y-1 ${className}`}
+    >
       <div className="flex items-start gap-3">
-        <div className={`flex h-12 w-12 flex-shrink-0 items-center justify-center border-[3px] border-neoBorder ${item.accent}`}>
-          <span className="text-xs font-black uppercase">{item.badge}</span>
+        <div className={`flex h-12 w-12 flex-shrink-0 items-center justify-center border-[3px] border-neoBorder shadow-neo-sm ${item.accent}`}>
+          {item.image ? (
+            <img src={item.image} alt={item.title} className="h-full w-full object-cover" />
+          ) : (
+            <span className="text-xl">{item.emoji || item.badge}</span>
+          )}
         </div>
 
-        <div className="min-w-0 flex-1">
-          <p className="text-[9px] font-black uppercase tracking-[0.25em] text-neoMuted">{item.label}</p>
-          <h3 className="mt-1 text-sm font-black uppercase leading-tight md:text-lg">{item.title}</h3>
-          <p className="mt-2 text-xs font-semibold leading-relaxed text-neoMuted md:text-sm">{item.desc}</p>
+        <div className="min-w-0 flex-1" lang="en">
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-neoMuted">{item.label}</p>
+          <h3 
+            className="mt-1 break-words text-[13px] font-black uppercase leading-[1.1] md:text-base"
+            style={{ overflowWrap: 'anywhere', hyphens: 'auto' }}
+          >
+            {item.title}
+          </h3>
+          <p className="mt-2 line-clamp-3 text-xs font-semibold leading-relaxed text-neoMuted">
+            {item.desc}
+          </p>
         </div>
       </div>
 
-      {isCommunity ? (
-        <button
-          type="button"
-          onClick={() => onToggleCommunity(item.title)}
-          className={`mt-5 w-full border-[3px] border-neoBorder py-3 text-xs font-black uppercase shadow-neo-sm ${
-            joined ? 'bg-neoCyan text-neoText' : 'bg-neoYellow text-neoText'
-          }`}
-        >
-          {joined ? 'Joined' : 'Join scene'}
-        </button>
-      ) : item.href ? (
-        <Link
-          to={item.href}
-          className="mt-5 block w-full border-[3px] border-neoBorder bg-neoYellow py-3 text-center text-xs font-black uppercase shadow-neo-sm"
-        >
-          View
-        </Link>
-      ) : null}
+      <div className="mt-auto pt-5">
+        {isCommunity ? (
+          <button
+            type="button"
+            onClick={() => onToggleCommunity(item.title)}
+            className={`w-full border-[3px] border-neoBorder py-3 text-xs font-black uppercase shadow-neo-sm transition-all active:translate-x-[2px] active:translate-y-[2px] active:shadow-none ${
+              joined ? 'bg-neoCyan text-neoText' : 'bg-neoYellow text-neoText'
+            }`}
+          >
+            {joined ? 'Joined' : 'Join This'}
+          </button>
+        ) : item.href ? (
+          <Link
+            to={item.href}
+            className="block w-full border-[3px] border-neoBorder bg-neoYellow py-3 text-center text-xs font-black uppercase shadow-neo-sm transition-all active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
+          >
+            View Profile
+          </Link>
+        ) : item.type === 'college' ? (
+          <div className="w-full border-[3px] border-neoBorder bg-neoSurfaceMuted py-3 text-center text-[10px] font-black uppercase">
+            Your Campus
+          </div>
+        ) : null}
+      </div>
     </article>
   );
 });
@@ -163,7 +184,7 @@ export function Explore() {
     user: state.user,
     updateProfile: state.updateProfile,
   }));
-  const [activeFilter, setActiveFilter] = React.useState('All');
+  const [activeFilter, setActiveFilter] = React.useState('Communities');
   const [searchTerm, setSearchTerm] = React.useState('');
   const [collegeUsers, setCollegeUsers] = React.useState([]);
   const [collegeCommunities, setCollegeCommunities] = React.useState([]);
@@ -223,12 +244,14 @@ export function Explore() {
   }, [user?.college, user?.uid]);
 
   const availableCommunityNames = React.useMemo(() => {
-    const approvedNames = collegeCommunities
+    // Show ALL possible communities from our details list + any newly approved ones from DB
+    const staticNames = Object.keys(communityDetails);
+    const dbNames = collegeCommunities
       .map((community) => community.title || community.name)
       .filter(Boolean);
 
-    return [...new Set([...joinedCommunities, ...approvedNames])];
-  }, [collegeCommunities, joinedCommunities]);
+    return [...new Set([...staticNames, ...dbNames])];
+  }, [collegeCommunities]);
 
   const items = React.useMemo(() => {
     const communityItems = availableCommunityNames.map((name) => {
@@ -238,9 +261,10 @@ export function Explore() {
         id: `community-${name}`,
         type: 'community',
         title: name,
-        desc: approvedCommunity?.desc || approvedCommunity?.description || details.desc || `Available at ${user?.college || 'your college'}.`,
-        label: user?.college || 'College community',
-        badge: (details.category || 'CO').slice(0, 2),
+        desc: approvedCommunity?.desc || approvedCommunity?.description || details.desc || `The ${name} hub for ${user?.college || 'your campus'}.`,
+        label: 'Society',
+        badge: 'CO',
+        emoji: details.emoji || '👥',
         category: 'Communities',
         accent: approvedCommunity?.accent || details.accent || 'bg-neoCyan',
       };
@@ -253,6 +277,7 @@ export function Explore() {
       desc: [profile.username ? `@${profile.username}` : null, profile.major, profile.college].filter(Boolean).join(' / '),
       label: 'Person',
       badge: 'PE',
+      image: profile.avatar || profile.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${profile.uid}`,
       category: 'People',
       accent: 'bg-neoYellow',
       href: `/profile/${profile.uid}`,
@@ -263,9 +288,10 @@ export function Explore() {
           id: `college-${user.college}`,
           type: 'college',
           title: user.college,
-          desc: 'Your verified campus space. Communities shown here are tied to this college.',
+          desc: 'Your verified campus space. All communities and students shown here are tied to this college.',
           label: 'College',
           badge: 'CL',
+          emoji: '🏛️',
           category: 'College',
           accent: 'bg-neoPink text-white',
         }]
@@ -275,7 +301,7 @@ export function Explore() {
   }, [availableCommunityNames, collegeCommunities, collegeUsers, user?.college]);
 
   const visibleItems = items.filter((item) => {
-    const filterMatches = activeFilter === 'All' || item.category === activeFilter;
+    const filterMatches = item.category === activeFilter;
     const lowerSearch = searchTerm.toLowerCase();
     const searchMatches =
       !lowerSearch ||
