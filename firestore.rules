@@ -131,6 +131,28 @@ service cloud.firestore {
     }
 
     // ─── NOTIFICATIONS ───────────────────────────────────────
+    match /collegeCommunities/{communityId} {
+      allow read: if request.auth != null
+                  && resource.data.status == 'approved';
+
+      allow create, update, delete: if request.auth.token.admin == true;
+    }
+
+    match /societyPresidentRequests/{requestId} {
+      allow create: if request.auth != null
+                    && request.resource.data.userId == request.auth.uid
+                    && request.resource.data.keys().hasAll([
+                      'userId',
+                      'college',
+                      'societyName',
+                      'status',
+                      'createdAt'
+                    ])
+                    && request.resource.data.status == 'pending';
+
+      allow read, update, delete: if request.auth.token.admin == true;
+    }
+
     match /notifications/{notificationId} {
       // Users can only read their own notifications
       allow read: if request.auth.uid == resource.data.userId;

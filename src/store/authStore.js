@@ -129,7 +129,13 @@ export const useAuthStore = create((set, get) => ({
     
     // Also reserve the username permanently here since it was deferred from signup
     if (finalData.username) {
-      await setDoc(doc(db, 'usernames', finalData.username), { uid: currentUser.uid });
+      const usernameRef = doc(db, 'usernames', finalData.username);
+      const usernameDoc = await getDoc(usernameRef);
+      if (!usernameDoc.exists()) {
+        await setDoc(usernameRef, { uid: currentUser.uid });
+      } else if (usernameDoc.data()?.uid !== currentUser.uid) {
+        throw new Error('Username already exists');
+      }
     }
     
     if (partialUser.prn) {

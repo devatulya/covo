@@ -1,30 +1,14 @@
 import React from 'react';
-import { ArrowLeft, BarChart2, ChevronDown, Image, Link2, Sparkles, ShieldAlert } from 'lucide-react';
+import { ArrowLeft, BarChart2, ChevronDown, Image, Link2, Sparkles } from 'lucide-react';
+import { addDoc, collection } from 'firebase/firestore';
 import { Link, useNavigate } from 'react-router-dom';
+import { X } from 'lucide-react';
 import { DraftsModal } from '../components/modals/DraftsModal';
 import { ToggleSwitch } from '../components/ui/ToggleSwitch';
+import { db } from '../firebase/config';
+import { useAuthStore } from '../store/authStore';
 import { useUiStore } from '../store/uiStore';
 import { compressImage, uploadToImageKit } from '../utils/imageKit';
-import { X } from 'lucide-react';
-
-import { addDoc, collection } from 'firebase/firestore';
-import { db, functions } from '../firebase/config';
-import { useAuthStore } from '../store/authStore';
-import { HfInference } from '@huggingface/inference';
-
-// --- Moderation Configuration ---
-const HF_MODEL = "martin-ha/toxic-comment-model";
-const TOXICITY_THRESHOLD = 0.60;
-const TOXIC_KEYWORDS = [
-  'i hate', 'hate you', 'hate everyone', 'hate all',
-  'i want to kill', 'kill you', 'kill them', 'kill all',
-  'i want to hurt', 'hurt you', 'hurt everyone',
-  'stupid idiot', 'you are stupid', 'you are an idiot',
-  'go die', 'you should die', 'die you',
-  'piece of shit', 'you suck', 'f*** you', 'f**k you',
-  'shut up', 'nobody likes you', 'you are worthless',
-];
-import { httpsCallable } from 'firebase/functions';
 
 const zones = ['meme', 'rant', 'event', 'discussion'];
 
@@ -38,8 +22,6 @@ export function CreatePost() {
   const [imageFile, setImageFile] = React.useState(null);
   const [imagePreview, setImagePreview] = React.useState(null);
   const [uploading, setUploading] = React.useState(false);
-  const [moderationError, setModerationError] = React.useState('');
-  const [isChecking, setIsChecking] = React.useState(false);
   const fileInputRef = React.useRef(null);
 
   const { openDrafts, closeDrafts, getDraftById } = useUiStore((state) => ({
@@ -47,15 +29,13 @@ export function CreatePost() {
     closeDrafts: state.closeDrafts,
     getDraftById: state.getDraftById,
   }));
+  const user = useAuthStore((state) => state.user);
 
   const characterCount = content.length;
 
   const handleRestoreDraft = (draftId) => {
     const draft = getDraftById(draftId);
-
-    if (!draft) {
-      return;
-    }
+    if (!draft) return;
 
     setTitle(draft.title);
     setContent(draft.content);
@@ -66,14 +46,14 @@ export function CreatePost() {
 
   const handleImageChange = (event) => {
     const file = event.target.files[0];
-    if (file) {
-      setImageFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result);
-      };
-      reader.readAsDataURL(file);
-    }
+    if (!file) return;
+
+    setImageFile(file);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImagePreview(reader.result);
+    };
+    reader.readAsDataURL(file);
   };
 
   const removeImage = () => {
@@ -84,62 +64,9 @@ export function CreatePost() {
     }
   };
 
-  const user = useAuthStore((state) => state.user);
-
   const handleSubmit = async () => {
-    if (!content.trim() || !user || uploading || isChecking) {
-      return;
-    }
+    if (!content.trim() || !user || uploading) return;
 
-    setModerationError('');
-
-    // ── Step 1: Check content for toxicity via AI ─────────────────────────
-    setIsChecking(true);
-    try {
-      const token = import.meta.env.VITE_HF_API_TOKEN;
-      if (!token) throw new Error("Moderation API token missing");
-
-      const hf = new HfInference(token);
-
-      const checkField = async (text, fieldName) => {
-        const cleanText = text.trim().toLowerCase();
-
-        // Layer 1: Keywords
-        const keywordMatch = TOXIC_KEYWORDS.find((kw) => cleanText.includes(kw));
-        if (keywordMatch) return { isToxic: true, reason: `Hate speech detected in ${fieldName}.` };
-
-        // Layer 2: ML Model
-        const result = await hf.textClassification(
-          { model: HF_MODEL, inputs: text.trim() },
-          { wait_for_model: true }
-        );
-
-        const topResult = result.reduce((a, b) => (a.score > b.score ? a : b));
-        const isToxic = topResult.label === "LABEL_1" && topResult.score >= TOXICITY_THRESHOLD;
-
-        return { isToxic, score: topResult.score };
-      };
-
-      // Check both fields
-      const titleResult = title.trim() ? await checkField(title, 'headline') : { isToxic: false };
-      const contentResult = await checkField(content, 'content');
-
-      if (titleResult.isToxic || contentResult.isToxic) {
-        setModerationError('Your post was flagged for toxic content. Please revise it.');
-        setIsChecking(false);
-        return;
-      }
-    } catch (err) {
-      console.error('[Moderation] Error:', err);
-      // Fail-closed
-      setModerationError('Unable to verify content safety. Please try again.');
-      setIsChecking(false);
-      return;
-    } finally {
-      setIsChecking(false);
-    }
-
-    // ── Step 2: Upload image & save post ─────────────────────────────────
     setUploading(true);
     try {
       let imageUrl = '';
@@ -247,7 +174,7 @@ export function CreatePost() {
           <div className="surface-panel flex flex-1 flex-col border-[3px] border-neoBorder shadow-neo">
             <textarea
               value={content}
-              onChange={(event) => { setContent(event.target.value.slice(0, 280)); setModerationError(''); }}
+              onChange={(event) => setContent(event.target.value.slice(0, 280))}
               className="min-h-[280px] flex-1 resize-none bg-transparent p-4 text-sm font-bold leading-relaxed text-neoText outline-none placeholder:text-neoMuted"
               placeholder="Spill the tea... what's happening on campus?"
             />
@@ -304,24 +231,13 @@ export function CreatePost() {
             <ToggleSwitch checked={ghostMode} onChange={setGhostMode} aria-label="Toggle ghost mode" />
           </div>
 
-          {/* Moderation Error Banner */}
-          {moderationError && (
-            <div className="flex items-start gap-3 border-[3px] border-neoBorder bg-red-500 p-4 text-white shadow-neo">
-              <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0 stroke-[3px]" />
-              <div>
-                <p className="text-xs font-black uppercase tracking-[0.15em]">Content Blocked by AI</p>
-                <p className="mt-1 text-sm font-semibold">{moderationError}</p>
-              </div>
-            </div>
-          )}
-
           <button
             type="button"
             onClick={handleSubmit}
-            disabled={!content.trim() || uploading || isChecking}
+            disabled={!content.trim() || uploading}
             className="w-full border-[3px] border-neoBorder bg-neoPink py-4 text-xl font-black uppercase text-white shadow-neo disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {isChecking ? '🔍 Checking...' : uploading ? 'Blasting...' : 'Blast it'}
+            {uploading ? 'Blasting...' : 'Blast it'}
           </button>
         </div>
       </div>

@@ -34,10 +34,6 @@ exports.onReportCreated = onReportCreated;
 const { generateImageKitAuth } = require("./src/imagekit");
 exports.generateImageKitAuth = generateImageKitAuth;
 
-// AI Content Moderation
-const { checkToxicity } = require("./src/moderation");
-exports.checkToxicity = checkToxicity;
-
 // Admin & Moderation
 const {
   onAnonymousPostCreated,
