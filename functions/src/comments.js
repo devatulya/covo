@@ -5,7 +5,7 @@
  *   onCommentCreated → comments/{commentId} onCreate
  */
 
-const { onDocumentCreated } = require("firebase-functions/v2/firestore");
+const { onDocumentCreated, onDocumentDeleted } = require("firebase-functions/v2/firestore");
 const { db } = require("./config");
 const { safeCounterUpdate } = require("./helpers");
 const { createNotification } = require("./notifications");
@@ -51,5 +51,21 @@ exports.onCommentCreated = onDocumentCreated(
     } catch (error) {
       console.error(`Error sending comment notification for post ${postId}:`, error.message);
     }
+  }
+);
+
+exports.onCommentDeleted = onDocumentDeleted(
+  "comments/{commentId}",
+  async (event) => {
+    const commentData = event.data?.data();
+    const postId = commentData?.postId;
+
+    if (!postId) {
+      console.error("Comment deleted without postId, skipping.");
+      return;
+    }
+
+    const postRef = db.collection("posts").doc(postId);
+    await safeCounterUpdate(postRef, "commentsCount", -1);
   }
 );

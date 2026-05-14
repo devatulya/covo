@@ -16,3 +16,6 @@ covo-feed/node_modules/
 covo-feed/dist/
 covo-feed/.env
 covo-feed/.env.local
+
+*.log
+server.out.log

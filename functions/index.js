@@ -17,8 +17,9 @@ exports.onLikeCreated = onLikeCreated;
 exports.onLikeDeleted = onLikeDeleted;
 
 // Comment system
-const { onCommentCreated } = require("./src/comments");
+const { onCommentCreated, onCommentDeleted } = require("./src/comments");
 exports.onCommentCreated = onCommentCreated;
+exports.onCommentDeleted = onCommentDeleted;
 
 // Post cleanup (cascade delete)
 const { onPostDeleted } = require("./src/posts");
@@ -33,6 +34,10 @@ exports.onReportCreated = onReportCreated;
 // ImageKit upload authentication
 const { generateImageKitAuth } = require("./src/imagekit");
 exports.generateImageKitAuth = generateImageKitAuth;
+
+// AI Content Moderation
+const { checkToxicity } = require("./src/moderation");
+exports.checkToxicity = checkToxicity;
 
 // Admin & Moderation
 const {

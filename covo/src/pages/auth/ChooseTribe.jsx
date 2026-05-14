@@ -1,36 +1,63 @@
 import React from 'react';
-import { ArrowLeft, ArrowRight, Check, Search } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, Crown, Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 
-const tribeFilters = ['ALL', 'SPORTS', 'ARTS', 'GREEK', 'TECH'];
+const tribeFilters = ['ALL', 'TECH', 'CULTURAL', 'SPORTS', 'ACADEMIC', 'SERVICE', 'MEDIA'];
 
 const majors = [
-  { id: 'Computer Science (BS)', icon: '💻', color: 'bg-neoCyan' },
-  { id: 'Graphic Design', icon: '🎨', color: 'bg-neoPink' },
-  { id: 'Mechanical Engineering', icon: '⚙️', color: 'bg-neoYellow' },
-  { id: 'Business Analytics', icon: '📊', color: 'bg-neoCyan' },
-  { id: 'Political Science', icon: '⚖️', color: 'bg-neoPink' }
+  { id: 'Computer Science', icon: 'CS', color: 'bg-neoCyan' },
+  { id: 'Artificial Intelligence and Machine Learning', icon: 'AI', color: 'bg-neoYellow' },
+  { id: 'Computer Science and Business Systems', icon: 'BS', color: 'bg-neoPink text-white' },
+  { id: 'Electronics and Telecommunications', icon: 'ET', color: 'bg-neoCyan' },
+  { id: 'Electrical', icon: 'EL', color: 'bg-neoYellow' },
+  { id: 'Mechanical', icon: 'ME', color: 'bg-neoPink text-white' },
+  { id: 'Civil', icon: 'CV', color: 'bg-neoCyan' },
+  { id: 'Civil and Environmental', icon: 'CE', color: 'bg-neoYellow' },
+  { id: 'Biotechnology', icon: 'BT', color: 'bg-neoPink text-white' },
 ];
 
 const sceneOptions = [
-  { id: 'Varsity Football', category: 'SPORTS', accent: 'bg-neoCyan' },
-  { id: 'Graphic Design', category: 'ARTS', accent: 'bg-neoPink text-white' },
-  { id: 'Chess Society', category: 'ALL', accent: 'bg-neoYellow' },
-  { id: 'Film Club', category: 'ARTS', accent: 'bg-neoPink text-white' },
-  { id: 'Esports', category: 'TECH', accent: 'bg-neoCyan' },
-  { id: 'Weekend Warriors', category: 'GREEK', accent: 'bg-neoYellow' },
-  { id: 'Code Collective', category: 'TECH', accent: 'bg-neoYellow' },
-  { id: 'Fine Arts Union', category: 'ARTS', accent: 'bg-neoPink text-white' },
+  { id: 'Coding Club', category: 'TECH', accent: 'bg-neoCyan' },
+  { id: 'AI and Robotics Society', category: 'TECH', accent: 'bg-neoYellow' },
+  { id: 'Cyber Security Cell', category: 'TECH', accent: 'bg-neoPink text-white' },
+  { id: 'Google Developer Student Club', category: 'TECH', accent: 'bg-neoCyan' },
+  { id: 'IEEE Student Branch', category: 'ACADEMIC', accent: 'bg-neoYellow' },
+  { id: 'Entrepreneurship Cell', category: 'ACADEMIC', accent: 'bg-neoPink text-white' },
+  { id: 'Research and Innovation Club', category: 'ACADEMIC', accent: 'bg-neoCyan' },
+  { id: 'Training and Placement Cell', category: 'ACADEMIC', accent: 'bg-neoYellow' },
+  { id: 'Drama Club', category: 'CULTURAL', accent: 'bg-neoPink text-white' },
+  { id: 'Dance Club', category: 'CULTURAL', accent: 'bg-neoCyan' },
+  { id: 'Music Club', category: 'CULTURAL', accent: 'bg-neoYellow' },
+  { id: 'Fine Arts Club', category: 'CULTURAL', accent: 'bg-neoPink text-white' },
+  { id: 'Literary Society', category: 'CULTURAL', accent: 'bg-neoCyan' },
+  { id: 'Debate Club', category: 'CULTURAL', accent: 'bg-neoYellow' },
+  { id: 'Photography Club', category: 'MEDIA', accent: 'bg-neoPink text-white' },
+  { id: 'Film and Media Club', category: 'MEDIA', accent: 'bg-neoCyan' },
+  { id: 'College Magazine Team', category: 'MEDIA', accent: 'bg-neoYellow' },
+  { id: 'Football Club', category: 'SPORTS', accent: 'bg-neoPink text-white' },
+  { id: 'Cricket Club', category: 'SPORTS', accent: 'bg-neoCyan' },
+  { id: 'Basketball Club', category: 'SPORTS', accent: 'bg-neoYellow' },
+  { id: 'Badminton Club', category: 'SPORTS', accent: 'bg-neoPink text-white' },
+  { id: 'NSS Volunteers', category: 'SERVICE', accent: 'bg-neoCyan' },
+  { id: 'Rotaract Club', category: 'SERVICE', accent: 'bg-neoYellow' },
+  { id: 'Eco Club', category: 'SERVICE', accent: 'bg-neoPink text-white' },
 ];
 
 export function ChooseTribe() {
   const navigate = useNavigate();
-  const { user, updateProfile } = useAuthStore(state => ({ user: state.user, updateProfile: state.updateProfile }));
+  const { user, updateProfile } = useAuthStore((state) => ({
+    user: state.user,
+    updateProfile: state.updateProfile,
+  }));
   const [selectedFilter, setSelectedFilter] = React.useState('ALL');
   const [searchTerm, setSearchTerm] = React.useState('');
   const [selectedMajor, setSelectedMajor] = React.useState(majors[0].id);
-  const [selectedScenes, setSelectedScenes] = React.useState(['Varsity Football', 'Graphic Design', 'Chess Society']);
+  const [selectedScenes, setSelectedScenes] = React.useState([
+    'Coding Club',
+    'AI and Robotics Society',
+    'Entrepreneurship Cell',
+  ]);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState('');
 
@@ -46,13 +73,9 @@ export function ChooseTribe() {
     );
   };
 
-  const handleBack = () => {
-    navigate(-1);
-  };
-
   const handleFinish = async () => {
     if (!selectedMajor || selectedScenes.length === 0) {
-      setError('Please select your branch and at least one community!');
+      setError('Please select your branch and at least one community.');
       return;
     }
 
@@ -60,7 +83,6 @@ export function ChooseTribe() {
     setError('');
 
     try {
-      // Commit the staged profile details along with the finalized Tribe selections
       await updateProfile({
         name: user?.name,
         prn: user?.prn || '',
@@ -70,13 +92,15 @@ export function ChooseTribe() {
         avatar: user?.avatar || '',
         major: selectedMajor,
         tribes: selectedScenes,
+        communities: selectedScenes,
         registrationCompleted: true,
-        onboardingComplete: true
+        onboardingComplete: true,
+        needsOnboarding: false,
       });
       navigate('/');
     } catch (err) {
       console.error('Error updating profile:', err);
-      setError('Failed to finalize your profile. Please try again.');
+      setError(err?.message || 'Failed to finalize your profile. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -93,7 +117,7 @@ export function ChooseTribe() {
           <div>
             <button
               type="button"
-              onClick={handleBack}
+              onClick={() => navigate(-1)}
               className="mb-5 inline-flex h-10 w-10 items-center justify-center border-[3px] border-neoBorder bg-neoSurface shadow-neo-sm"
             >
               <ArrowLeft className="h-5 w-5 stroke-[3px]" />
@@ -103,30 +127,32 @@ export function ChooseTribe() {
               <br />
               your tribe
             </h1>
-            <p className="mt-4 text-lg font-semibold text-neoText">Where do you belong at State University?</p>
+            <p className="mt-4 text-lg font-semibold text-neoText">
+              Pick your branch and follow communities at {user?.college || 'your college'}.
+            </p>
           </div>
         </div>
 
         <div className="surface-panel border-[3px] border-neoBorder p-5 shadow-neo md:p-6">
           <div className="mt-4 space-y-10">
-            {/* Major Selection Grid */}
-            <div>
-              <div className="mb-4 flex items-center justify-between">
+            <section>
+              <div className="mb-4 flex items-center justify-between gap-4">
                 <h2 className="text-2xl font-black uppercase tracking-tight">Select your branch</h2>
-                <span className="text-xs font-black uppercase text-neoMuted border-[2px] border-neoBorder px-2 py-1 bg-neoSurface">Required</span>
+                <span className="border-[2px] border-neoBorder bg-neoSurface px-2 py-1 text-xs font-black uppercase text-neoMuted">
+                  Required
+                </span>
               </div>
-              
-              {/* Mobile Dropdown (Compact) */}
+
               <div className="sm:hidden">
                 <div className="relative">
                   <select
                     value={selectedMajor}
-                    onChange={(e) => setSelectedMajor(e.target.value)}
-                    className="h-16 w-full appearance-none border-[3px] border-neoBorder bg-neoSurface px-4 text-lg font-black uppercase text-neoText shadow-neo outline-none"
+                    onChange={(event) => setSelectedMajor(event.target.value)}
+                    className="h-16 w-full appearance-none border-[3px] border-neoBorder bg-neoSurface px-4 pr-16 text-base font-black uppercase text-neoText shadow-neo outline-none"
                   >
                     {majors.map((major) => (
                       <option key={major.id} value={major.id}>
-                        {major.icon} {major.id}
+                        {major.id}
                       </option>
                     ))}
                   </select>
@@ -136,8 +162,7 @@ export function ChooseTribe() {
                 </div>
               </div>
 
-              {/* Desktop Selection Grid */}
-              <div className="hidden sm:grid grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="hidden grid-cols-2 gap-5 sm:grid lg:grid-cols-3">
                 {majors.map((major) => {
                   const isSelected = selectedMajor === major.id;
                   return (
@@ -145,29 +170,31 @@ export function ChooseTribe() {
                       key={major.id}
                       type="button"
                       onClick={() => setSelectedMajor(major.id)}
-                      className={`group relative flex flex-row items-center sm:flex-col sm:items-start p-3 md:p-5 border-[3px] border-neoBorder transition-all text-left ${
-                        isSelected 
-                          ? `${major.color} shadow-neo translate-y-[-4px]` 
-                          : 'bg-neoSurface hover:bg-neoSurfaceMuted hover:translate-y-[-2px] hover:shadow-neo-sm'
+                      className={`group relative flex min-h-40 flex-col items-start border-[3px] border-neoBorder p-5 text-left transition-all md:min-h-44 md:p-6 ${
+                        isSelected
+                          ? `${major.color} shadow-neo`
+                          : 'bg-neoSurface hover:-translate-y-1 hover:bg-neoSurfaceMuted hover:shadow-neo-sm'
                       }`}
                     >
-                      <div className="text-xl sm:text-3xl md:text-4xl mr-3 sm:mr-0 sm:mb-4">{major.icon}</div>
-                      <div className="text-sm sm:text-lg md:text-xl font-black uppercase leading-none">{major.id}</div>
-                      {isSelected && (
-                        <div className="absolute top-2 right-2 sm:top-3 sm:right-3 md:top-4 md:right-4 bg-neoText text-neoBg p-1 border-[2px] border-neoBorder">
-                          <Check className="h-3 w-3 md:h-4 md:w-4 stroke-[4px]" />
-                        </div>
-                      )}
+                      {isSelected ? (
+                        <span className="absolute left-3 top-3 flex h-7 w-7 items-center justify-center bg-neoText text-neoBg">
+                          <Check className="h-5 w-5 stroke-[4px]" />
+                        </span>
+                      ) : null}
+
+                      <span className={`flex h-14 w-14 items-center justify-center border-[3px] border-neoBorder bg-neoSurface text-base font-black text-neoText ${isSelected ? 'ml-2 mt-2' : ''}`}>
+                        {major.icon}
+                      </span>
+                      <span className="mt-auto pt-6 text-base font-black uppercase leading-snug md:text-xl">{major.id}</span>
                     </button>
                   );
                 })}
               </div>
-            </div>
+            </section>
 
-            <hr className="border-t-[3px] border-neoBorder border-dashed opacity-30" />
+            <hr className="border-t-[3px] border-dashed border-neoBorder opacity-30" />
 
-            {/* Search and Filters */}
-            <div>
+            <section>
               <div className="relative">
                 <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 stroke-[3px] text-neoText" />
                 <input
@@ -194,63 +221,86 @@ export function ChooseTribe() {
                   </button>
                 ))}
               </div>
-            </div>
+            </section>
 
-            {/* Scenes Selection */}
-            <div>
+            <section>
               <div className="mb-4">
-                <h2 className="text-xl md:text-2xl font-black uppercase tracking-tight text-neoText">Join sub communities</h2>
-                <p className="text-xs md:text-sm font-semibold text-neoMuted mt-1">Select the communities you want to follow</p>
+                <h2 className="text-xl font-black uppercase tracking-tight text-neoText md:text-2xl">Join sub communities</h2>
+                <p className="mt-1 text-xs font-semibold text-neoMuted md:text-sm">
+                  Start with common global societies. Approved college-specific societies will appear here later.
+                </p>
               </div>
+
               <div className="flex flex-wrap gap-2 md:gap-4">
                 {visibleScenes.map((scene) => {
                   const selected = selectedScenes.includes(scene.id);
-
                   return (
                     <button
                       key={scene.id}
                       type="button"
                       onClick={() => handleSceneToggle(scene.id)}
-                      className={`group rounded-full border-[3px] border-neoBorder px-4 py-2.5 md:px-6 md:py-4 text-base md:text-xl font-black transition-all ${
-                        selected 
-                          ? `${scene.accent} shadow-neo -translate-y-1` 
-                          : 'bg-neoSurface hover:translate-y-[-2px] hover:shadow-neo-sm'
+                      className={`group border-[3px] border-neoBorder px-4 py-2.5 text-base font-black transition-all md:px-6 md:py-4 md:text-xl ${
+                        selected
+                          ? `${scene.accent} shadow-neo -translate-y-1`
+                          : 'bg-neoSurface hover:-translate-y-0.5 hover:shadow-neo-sm'
                       }`}
                     >
                       <span className="flex items-center gap-2">
                         {scene.id}
-                        {selected && <Check className="h-4 w-4 md:h-5 md:w-5 stroke-[4px]" />}
+                        {selected ? <Check className="h-4 w-4 stroke-[4px] md:h-5 md:w-5" /> : null}
                       </span>
                     </button>
                   );
                 })}
               </div>
-            </div>
+
+              <button
+                type="button"
+                disabled
+                className="mt-6 flex w-full cursor-not-allowed items-center justify-between gap-4 border-[3px] border-neoBorder bg-neoSurfaceMuted px-4 py-4 text-left opacity-80 shadow-neo-sm md:px-6"
+              >
+                <span className="flex items-center gap-3">
+                  <span className="flex h-11 w-11 items-center justify-center border-[3px] border-neoBorder bg-neoYellow">
+                    <Crown className="h-5 w-5 stroke-[3px]" />
+                  </span>
+                  <span>
+                    <span className="block text-sm font-black uppercase md:text-base">Register yourself as society president</span>
+                    <span className="mt-1 block text-xs font-bold uppercase text-neoMuted">
+                      Coming soon: approved presidents can request societies for their own college.
+                    </span>
+                  </span>
+                </span>
+                <span className="border-[3px] border-neoBorder bg-neoPink px-3 py-1 text-[10px] font-black uppercase text-white">
+                  Coming soon
+                </span>
+              </button>
+            </section>
           </div>
         </div>
 
-        <div className="sticky bottom-4 mt-8 md:mt-12 flex flex-col gap-2">
-          {error && (
-            <div className="bg-red-500 border-[3px] md:border-[4px] border-neoBorder text-white px-4 py-3 md:py-4 text-sm md:text-base font-black uppercase text-center shadow-neo animate-in fade-in slide-in-from-bottom-2">
+        <div className="sticky bottom-4 mt-8 flex flex-col gap-2 md:mt-12">
+          {error ? (
+            <div className="border-[3px] border-neoBorder bg-red-500 px-4 py-3 text-center text-sm font-black uppercase text-white shadow-neo md:border-[4px] md:py-4 md:text-base">
               {error}
             </div>
-          )}
+          ) : null}
+
           <button
             type="button"
             onClick={handleFinish}
             disabled={loading}
-            className={`flex w-full items-center justify-between border-[3px] md:border-[4px] border-neoBorder bg-neoText px-4 py-4 md:px-8 md:py-6 text-left text-neoBg shadow-neo transition-all active:translate-y-[4px] active:shadow-none ${
-              loading ? 'opacity-70 cursor-wait' : 'hover:-translate-y-1'
+            className={`flex w-full items-center justify-between border-[3px] border-neoBorder bg-neoText px-4 py-4 text-left text-neoBg shadow-neo transition-all active:translate-y-[4px] active:shadow-none md:border-[4px] md:px-8 md:py-6 ${
+              loading ? 'cursor-wait opacity-70' : 'hover:-translate-y-1'
             }`}
           >
-            <span className="text-xl md:text-3xl font-black uppercase leading-none">
+            <span className="text-xl font-black uppercase leading-none md:text-3xl">
               {loading ? 'Initializing Chaos...' : 'Bring the Chaos'}
             </span>
             <span className="flex items-center gap-3 md:gap-6">
-              <span className="border-[2px] md:border-[3px] border-neoBorder bg-neoCyan px-3 py-1.5 md:px-5 md:py-3 text-xs md:text-lg font-black uppercase text-neoText shadow-neo-sm">
+              <span className="border-[2px] border-neoBorder bg-neoCyan px-3 py-1.5 text-xs font-black uppercase text-neoText shadow-neo-sm md:border-[3px] md:px-5 md:py-3 md:text-lg">
                 {selectedScenes.length} Selected
               </span>
-              <ArrowRight className={`h-8 w-8 md:h-12 md:w-12 stroke-[4px] ${loading ? 'animate-pulse' : ''}`} />
+              <ArrowRight className={`h-8 w-8 stroke-[4px] md:h-12 md:w-12 ${loading ? 'animate-pulse' : ''}`} />
             </span>
           </button>
         </div>

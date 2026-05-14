@@ -34,6 +34,36 @@ function ProtectedRoute({ children }) {
   return children;
 }
 
+function PublicAuthRoute({ children }) {
+  const { isAuthenticated, user } = useAuthStore((state) => ({
+    isAuthenticated: state.isAuthenticated,
+    user: state.user,
+  }));
+
+  if (isAuthenticated && !user?.needsOnboarding) {
+    return <Navigate to="/" replace />;
+  }
+
+  return children;
+}
+
+function OnboardingRoute({ children }) {
+  const { isAuthenticated, user } = useAuthStore((state) => ({
+    isAuthenticated: state.isAuthenticated,
+    user: state.user,
+  }));
+
+  if (!isAuthenticated && !user?.uid) {
+    return <Navigate to="/landing" replace />;
+  }
+
+  if (isAuthenticated && !user?.needsOnboarding) {
+    return <Navigate to="/" replace />;
+  }
+
+  return children;
+}
+
 export default function App() {
   const { isAuthenticated, user, loading, initAuth } = useAuthStore((state) => ({
     isAuthenticated: state.isAuthenticated,
@@ -62,11 +92,11 @@ export default function App() {
 
       <Routes>
         <Route path="/landing" element={<Landing />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
-        <Route path="/complete-profile" element={<CompleteProfile />} />
-        <Route path="/upload-id" element={<UploadIdCard />} />
-        <Route path="/choose-tribe" element={<ChooseTribe />} />
+        <Route path="/login" element={<PublicAuthRoute><Login /></PublicAuthRoute>} />
+        <Route path="/signup" element={<PublicAuthRoute><Signup /></PublicAuthRoute>} />
+        <Route path="/complete-profile" element={<OnboardingRoute><CompleteProfile /></OnboardingRoute>} />
+        <Route path="/upload-id" element={<OnboardingRoute><UploadIdCard /></OnboardingRoute>} />
+        <Route path="/choose-tribe" element={<OnboardingRoute><ChooseTribe /></OnboardingRoute>} />
 
         <Route
           element={

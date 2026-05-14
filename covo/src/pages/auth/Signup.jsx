@@ -62,12 +62,16 @@ export function Signup() {
       }
 
       // Create user
-      await signup({
+      const result = await signup({
         email: emailStr,
         password: formData.password,
         username: normalizedUsername || 'new_user',
         name: titleCase(formData.username.trim() || 'New User'),
       });
+      if (result?.existingCompleted) {
+        navigate('/');
+        return;
+      }
       // Route user to Complete Profile page
       navigate(`/complete-profile?method=${signupMethod}`);
     } catch (err) {

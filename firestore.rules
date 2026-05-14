@@ -7,7 +7,17 @@ service cloud.firestore {
     match /usernames/{username} {
       allow get: if true;
       allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;
-      allow update, delete: if false;
+      allow update: if request.auth != null
+                    && request.resource.data.uid == request.auth.uid
+                    && (
+                      !exists(/databases/$(database)/documents/users/$(resource.data.uid))
+                      ||
+                      (
+                        get(/databases/$(database)/documents/users/$(resource.data.uid)).data.registrationCompleted != true
+                        && get(/databases/$(database)/documents/users/$(resource.data.uid)).data.onboardingComplete != true
+                      )
+                    );
+      allow delete: if false;
     }
 
     // ─── AUTH IDENTIFIERS (Public login lookup mapping) ─────
@@ -28,11 +38,18 @@ service cloud.firestore {
                     && request.resource.data.keys().hasAll(['userId', 'username', 'email', 'college', 'createdAt'])
                     && request.resource.data.userId == request.auth.uid;
 
-      // Only the user can update their own profile
-      // Cannot change userId or email after creation
+      // Only the user can update their own profile.
+      // userId/email may be backfilled on incomplete profiles, but not changed to another identity.
       allow update: if request.auth.uid == userId
-                    && !request.resource.data.diff(resource.data).affectedKeys()
-                        .hasAny(['userId', 'email']);
+                    && (
+                      !request.resource.data.diff(resource.data).affectedKeys().hasAny(['userId'])
+                      || request.resource.data.userId == request.auth.uid
+                    )
+                    && (
+                      !request.resource.data.diff(resource.data).affectedKeys().hasAny(['email'])
+                      || request.resource.data.email == resource.data.email
+                      || request.resource.data.email == request.auth.token.email
+                    );
 
       // No client-side deletion of user profiles
       allow delete: if false;
@@ -130,7 +147,7 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
-    // ─── NOTIFICATIONS ───────────────────────────────────────
+    // ─── COLLEGE COMMUNITIES ─────────────────────────────────
     match /collegeCommunities/{communityId} {
       allow read: if request.auth != null
                   && resource.data.status == 'approved';
@@ -153,6 +170,7 @@ service cloud.firestore {
       allow read, update, delete: if request.auth.token.admin == true;
     }
 
+    // ─── NOTIFICATIONS ───────────────────────────────────────
     match /notifications/{notificationId} {
       // Users can only read their own notifications
       allow read: if request.auth.uid == resource.data.userId;
